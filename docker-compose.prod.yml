@@ -1,0 +1,14 @@
+version: '3.3'
+services:
+  khokha_entry_prod:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+      args:
+        - NODE_ENV={NODE_ENV}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - '7300:4000'
+    env_file:
+      - .env.prod
