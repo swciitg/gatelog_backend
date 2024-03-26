@@ -4,8 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
-      args:
-        - NODE_ENV={NODE_ENV}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
