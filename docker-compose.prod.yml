@@ -4,11 +4,15 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.prod
-      args:
-        - NODE_ENV={NODE_ENV}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
       - '7300:4000'
     env_file:
       - .env.prod
+    networks:
+      - one-stop-2021_default
+
+networks:
+  one-stop-2021_default:
+    external: true
