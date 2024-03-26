@@ -1,5 +1,6 @@
 const {isValidJWT, isGuestUser} = require('./auth');
 const uuid = require('uuid');
+const WebSocket = require('ws');
 
 exports.authenticateConnection = async(socket, req) => {
     if (req.headers["security-key"] !== process.env.SECURITY_KEY) {
