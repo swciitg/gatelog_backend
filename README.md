@@ -4,7 +4,7 @@ This is the backend server for Khokha Entry on [OneStop IITG](https://github.com
 
 ## Requirements
 
-- NPM
+- Node.js
 - Docker
 - Docker Compose
 
@@ -34,7 +34,7 @@ Once the Docker container is up and running, you can access your Node.js server 
 
 ## Configuration
 
-You can configure your Node.js server by modifying the `Dockerfile.dev` and `docker-compose.dev.yml` files according to your requirements.
+You can configure your Node.js server by modifying the `.env.dev`, `Dockerfile.dev` and `docker-compose.dev.yml` files according to your requirements.
 
 ## Project Structure
 - `Dockerfile.*`: Contains instructions to build the Docker image for your Node.js server.
