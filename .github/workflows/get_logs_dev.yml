@@ -17,5 +17,5 @@ jobs:
         port: ${{ secrets.SSH_PORT }}
         username: ${{ secrets.SSH_USERNAME }}
         script: |
-            cd /webapps/khokha_entry_backend
+            cd /webapps/test-servers/khokha_entry_backend
             docker-compose -f docker-compose.dev.yml logs --tail=1000
