@@ -47,7 +47,7 @@ const formSchema = new Schema({
     type: Boolean,
     required: true
   },
-  entryTime: {
+  exitTime: {
     type: String,
   },
 }, {
