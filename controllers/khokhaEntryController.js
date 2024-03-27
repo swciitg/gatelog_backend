@@ -7,10 +7,36 @@ exports.addNewEntry = async(req, res, next) => {
         success: true, 
         message: "Entry Added Successfully.",
         entryId: "abcdefgh" // Object Id from mongo document
+        
     });
+    
 
+    try {
+        const {name,rollNumber,department,hostel,roomNumber,Course,outgoingLocation,phoneNumber,outlook,Status} =req.body
 
-    return res.json({status: "Success"});
+  
+    const date = Date.parse(req.body.date);
+  
+    const newFormData = new formData({
+      outlook,
+      name,
+      phoneNumber,
+      outgoingLocation,
+      rollNumber,
+      roomNumber,
+      hostel,
+      department,
+      Course,
+      Status
+     
+    });
+  
+    newFormData.save()
+    
+    .then(() => res.json(`Success!+${newFormData}`) )
+    } catch (e) {
+        res.status(400).json('Error: ' + e)
+    }
 };
 
 exports.closeEntry = async(req, res, next) => {};
