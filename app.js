@@ -5,6 +5,7 @@ const websocketHelper = require('./helpers/websocketsHelper');
 const { connectionHandler } = require('./handlers/websocketHandler');
 const khokhaEntryRouter = require('./routers/khokhaEntryRouter');
 const securityKeyMiddleware = require('./middlewares/securityKeyMiddleware');
+const { errorHandler } = require("./middlewares/errorHandler");
 
 const app = express();
 const server = http.createServer(app);
@@ -12,8 +13,11 @@ const wss = new WebSocket.Server({ server });
 
 // TODO: Add User Auth Middleware
 app.use(express.json());
-app.use(securityKeyMiddleware);
+// app.use(securityKeyMiddleware);
 app.use('/', khokhaEntryRouter);
+
+app.use(errorHandler);
+
 
 wss.on('connection', connectionHandler);
 
@@ -24,7 +28,7 @@ exports.onKhokhaEntryAdded = (connectionId, data) => {
         }
     });
 }
-
-server.listen(process.env.PORT, () => {
-    console.log(`Server running on port ${process.env.PORT}`);
+const port = process.env.PORT || 4000
+server.listen(port, () => {
+    console.log(`Server running on port ${port || 3000}`);
 });
