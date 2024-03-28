@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
-const formSchema = new Schema({
+const khokhaEntrySchema = new Schema({
   outlookEmail: {
     type: String,
     required: true
@@ -21,7 +21,8 @@ const formSchema = new Schema({
   },
   exitTime: {
     type: Date,
-    default: new Date
+    default: new Date,
+    required:false
   },
   rollNumber: {
     type: Number, 
@@ -29,31 +30,38 @@ const formSchema = new Schema({
   },
   entryTime: {
     type: Date,
-    default: null
+    default: null,
+    required:false
   },
   roomNumber: {
     type: String,
+    required:true
   },
   hostel: {
     type: String,
+    required:true
   },
   department: {
     type: String,
+    required:true
   },
   program: {
     type: String,
+    required:true
   },
   status: {
     type: Boolean,
-    required: true
+    default:false
   },
-  exitTime: {
-    type: String,
-  },
+  connectionId:{
+    type:String,
+    required:true
+  }
+ 
 }, {
   timestamps: true,
 });
 
-const khokhaEntryModel = mongoose.model('KhokhaEntryModel', formSchema);
+const khokhaEntryModel = mongoose.model('KhokhaEntryModel', khokhaEntrySchema);
 
 module.exports = khokhaEntryModel;
