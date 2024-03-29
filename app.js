@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 app.use(securityKeyMiddleware);
-app.use('/khokhaEntry/api', khokhaEntryRouter);
+app.use('/test/khokhaEntry/api', khokhaEntryRouter);
 app.use(errorHandler);
 
 wss.on('connection', connectionHandler);
