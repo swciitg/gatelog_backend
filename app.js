@@ -12,8 +12,7 @@ const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 
 server.on('upgrade', (req, socket, head) => {
-    console.log(req.url);
-    if(req.url === '/ws'){
+    if(req.url === process.env.WEBSOCKET_CONNECTION_PATH){
         wss.handleUpgrade(req, socket, head, (ws) => {
             wss.emit('connection', ws, req);
         });
