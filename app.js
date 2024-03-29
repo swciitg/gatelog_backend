@@ -21,9 +21,13 @@ server.on('upgrade', (req, socket, head) => {
     }
 });
 
+app.use((req, res, next) => {
+    console.log(req.method + '\t' + req.url);
+    next();
+});
 app.use(express.json());
 app.use(securityKeyMiddleware);
-app.use('/', khokhaEntryRouter);
+app.use('/khokhaEntry/api', khokhaEntryRouter);
 app.use(errorHandler);
 
 wss.on('connection', connectionHandler);
