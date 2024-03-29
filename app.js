@@ -27,7 +27,7 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 app.use(securityKeyMiddleware);
-app.use('/test/khokhaEntry/api', khokhaEntryRouter);
+app.use(process.env.BASE_URL, khokhaEntryRouter);
 app.use(errorHandler);
 
 wss.on('connection', connectionHandler);
@@ -43,12 +43,13 @@ exports.sendMessageToSocket = (connectionId, data) => {
 }
 
 exports.isConnected = (connectionId) => {
+    var isClientConnected = false;
     wss.clients.forEach((client) => {
         if(client.connectionId === connectionId){
-            return true;
+            isClientConnected = true;
         }
     });
-    return false;
+    return isClientConnected;
 }
 
 exports.closeConnection = (connectionId) => {
