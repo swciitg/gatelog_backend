@@ -15,53 +15,48 @@ const khokhaEntrySchema = new Schema({
     type: Number,
     required: true
   },
-  outgoingLocation: {
+  destination: {
     type: String,
     required: true
   },
-  exitTime: {
+  outTime: {
     type: Date,
-    default: new Date,
-    required:false
-  },
-  rollNumber: {
-    type: Number, 
     required: true
   },
-  entryTime: {
+  inTime: {
     type: Date,
     default: null,
-    required:false
+    required: false
+  },
+  rollNumber: {
+    type: Number,
+    required: true
   },
   roomNumber: {
     type: String,
-    required:true
+    required: true
   },
   hostel: {
     type: String,
-    required:true
+    required: true
   },
   department: {
     type: String,
-    required:true
+    required: true
   },
   program: {
     type: String,
-    required:true
+    required: true
   },
-  status: {
+  isClosed: {
     type: Boolean,
-    default:false
-  },
-  connectionId:{
-    type:String,
-    required:true
+    default: false,
+    required: false
   }
- 
 }, {
   timestamps: true,
 });
 
-const khokhaEntryModel = mongoose.model('KhokhaEntryModel', khokhaEntrySchema);
+const KhokhaEntryModel = mongoose.model('KhokhaEntryModel', khokhaEntrySchema);
 
-module.exports = khokhaEntryModel;
+module.exports = KhokhaEntryModel;

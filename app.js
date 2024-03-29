@@ -28,6 +28,14 @@ exports.sendMessageToSocket = (connectionId, data) => {
     });
 }
 
+exports.closeConnection = (connectionId) => {
+    wss.clients.forEach((client) => {
+        if(client.connectionId === connectionId){
+            client.close();
+        }
+    });
+}
+
 server.listen(process.env.PORT, async() => {
     try{
         await mongoose.connect(process.env.DATABASE_URI);
