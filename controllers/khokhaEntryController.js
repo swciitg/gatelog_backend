@@ -4,6 +4,12 @@ const KhokhaEntryModel = require('../models/KhokhaEntryModel');
 // TODO: Implement these controllers
 exports.addNewEntry = async (req, res, next) => {
     try {
+        if(ws.isConnected(req.body.connectionId)===false){
+            return res.json({
+                success: false,
+                message: "Socket is not connected"
+            });
+        }
         const entry = await KhokhaEntryModel.create({
             outlookEmail: req.body.outlookEmail,
             name: req.body.name,
@@ -17,11 +23,11 @@ exports.addNewEntry = async (req, res, next) => {
             destination: req.body.destination,
         });
 
-        console.log(entry);
+        
         ws.sendMessageToSocket(req.body.connectionId, {
             success: true,
             message: "Entry Added to database!",
-            entryId: entry._id
+            data: entry
         });
         ws.closeConnection(req.body.connectionId);
 
@@ -37,6 +43,13 @@ exports.addNewEntry = async (req, res, next) => {
 exports.closeEntry = async (req, res, next) => {
     const entryId = req.params.id;
     try {
+        if(ws.isConnected(req.body.connectionId)===false){
+            return res.json({
+                success: false,
+                message: "Socket is not connected"
+            });
+        }
+
         const entry = await KhokhaEntryModel.findById(entryId);
 
         if (!entry) {
@@ -64,7 +77,7 @@ exports.closeEntry = async (req, res, next) => {
                 });
             }
 
-            const response = await KhokhaEntryModel.findByIdAndUpdate(entryId, {
+            const newEntry = await KhokhaEntryModel.findByIdAndUpdate(entryId, {
                 inTime: Date(),
                 isClosed: true
             }, {new: true});
@@ -72,10 +85,9 @@ exports.closeEntry = async (req, res, next) => {
             ws.sendMessageToSocket(req.body.connectionId, {
                 success: true,
                 message: "Entry Closed Successfully!",
+                data: newEntry
             });
             ws.closeConnection(req.body.connectionId);
-
-            console.log(response);
 
             return res.json({
                 success: true,

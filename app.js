@@ -9,7 +9,7 @@ const securityKeyMiddleware = require("./middlewares/securityKeyMiddleware");
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
+const wss = new WebSocket.Server({ server , path: '/ws'});
 
 app.use(express.json());
 app.use(securityKeyMiddleware);
@@ -26,6 +26,15 @@ exports.sendMessageToSocket = (connectionId, data) => {
             }
         }
     });
+}
+
+exports.isConnected = (connectionId) => {
+    wss.clients.forEach((client) => {
+        if(client.connectionId === connectionId){
+            return true;
+        }
+    });
+    return false;
 }
 
 exports.closeConnection = (connectionId) => {
