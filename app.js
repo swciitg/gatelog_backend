@@ -9,7 +9,17 @@ const securityKeyMiddleware = require("./middlewares/securityKeyMiddleware");
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server , path: '/ws'});
+const wss = new WebSocket.Server({ noServer: true });
+
+server.on('upgrade', (req, socket, head) => {
+    if(req.url === '/ws'){
+        wss.handleUpgrade(req, socket, head, (ws) => {
+            wss.emit('connection', ws, req);
+        });
+    } else {
+        socket.destroy();
+    }
+});
 
 app.use(express.json());
 app.use(securityKeyMiddleware);

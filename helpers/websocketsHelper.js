@@ -14,7 +14,6 @@ exports.authenticateConnection = async(socket, req) => {
         }
     }catch(err){
         if(axios.isAxiosError(err)){
-            console.log(err.response);
             socket.send(JSON.stringify({
                 success: false,
                 statusCode: err.response.status,
@@ -22,7 +21,6 @@ exports.authenticateConnection = async(socket, req) => {
                 message: err.response.data.message
             }));
         }else{
-            console.log(err);
             socket.send(JSON.stringify({
                 success: false,
                 statusCode: err.statusCode,
