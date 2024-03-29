@@ -1,34 +1,35 @@
-const {isValidJWT, isGuestUser} = require('./auth');
+const axios = require('axios');
+const { verifyAuthentication } = require('./auth');
 const uuid = require('uuid');
-const WebSocket = require('ws');
 
 exports.authenticateConnection = async(socket, req) => {
-    if (req.headers["security-key"] !== process.env.SECURITY_KEY) {
-        socket.send(JSON.stringify({ message: "You are not authorized app.js" }));
-        socket.close();
-    }
-
     try{
-        const isValidUser = await isValidJWT(req);
-        const isGuest = await isGuestUser(req);
+        const isValidUser = await verifyAuthentication(req);
 
-        if(isValidUser === false || isGuest === true){
+        if(isValidUser === false){
             socket.close();
         }else{
             socket.connectionId = uuid.v4();
             socket.send(JSON.stringify({connectionId: socket.connectionId}));
         }
     }catch(err){
-        socket.send(JSON.stringify({
-            success: false,
-            error: err.message
-        }));
+        if(axios.isAxiosError(err)){
+            console.log(err.response);
+            socket.send(JSON.stringify({
+                success: false,
+                statusCode: err.response.status,
+                error: err.response.data.error,
+                message: err.response.data.message
+            }));
+        }else{
+            console.log(err);
+            socket.send(JSON.stringify({
+                success: false,
+                statusCode: err.statusCode,
+                error: err.name,
+                message: err.message
+            }));
+        }
         socket.close();
     }
 }
-
-exports.sendMessageToClient = (client, data) => {
-    if(client.readyState === WebSocket.OPEN){
-        client.send(JSON.stringify(data));
-    }
-};

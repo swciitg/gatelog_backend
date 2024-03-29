@@ -10,9 +10,9 @@ services:
       - '7500:4000'
     env_file:
       - .env.dev
-    networks:
-      - one-stop-2021_default
+#     networks:
+#       - one-stop-2021_default
 
-networks:
-  one-stop-2021_default:
-    external: true
+# networks:
+#   one-stop-2021_default:
+#     external: true

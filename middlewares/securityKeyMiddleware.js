@@ -1,8 +1,8 @@
-const { RequestValidationError } = require("../errors/requestValidationError");
+const { NotAuthorizedError } = require("../errors/notAuthorizedError");
 
 module.exports = (req, res, next) => {
-    if (req.headers["security-key"] !== process.env.SECURITY_KEY) {
-        next(new RequestValidationError("Unauthorized user"));
+    if (req.headers["khokha-security-key"] !== process.env.KHOKHA_SECURITY_KEY) {
+        next(new NotAuthorizedError("Unauthorized Request"));
     }
     next();
 }
