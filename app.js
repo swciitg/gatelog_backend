@@ -1,3 +1,4 @@
+require('dotenv').config({path: `./.env.${process.env.NODE_ENV}`});
 const express = require("express");
 const http = require("http");
 const WebSocket = require("ws");
