@@ -7,6 +7,7 @@ exports.addNewEntry = async (req, res, next) => {
         if(ws.isConnected(req.body.connectionId)===false){
             return res.json({
                 success: false,
+                eventName: "ERROR",
                 message: "Socket is not connected"
             });
         }
@@ -26,6 +27,7 @@ exports.addNewEntry = async (req, res, next) => {
         
         ws.sendMessageToSocket(req.body.connectionId, {
             success: true,
+            eventName: "ENTRY_ADDED",
             message: "Entry Added to database!",
             data: entry
         });
@@ -46,6 +48,7 @@ exports.closeEntry = async (req, res, next) => {
         if(ws.isConnected(req.body.connectionId)===false){
             return res.json({
                 success: false,
+                eventName: "ERROR",
                 message: "Socket is not connected"
             });
         }
@@ -55,6 +58,7 @@ exports.closeEntry = async (req, res, next) => {
         if (!entry) {
             ws.sendMessageToSocket(req.body.connectionId, {
                 success: false,
+                eventName: "ERROR",
                 message: "Entry not found!"
             });
             ws.closeConnection(req.body.connectionId);
@@ -67,6 +71,7 @@ exports.closeEntry = async (req, res, next) => {
             if(entry.isClosed){
                 ws.sendMessageToSocket(req.body.connectionId, {
                     success: false,
+                    eventName: "ERROR",
                     message: "Entry Already Closed!",
                 });
                 ws.closeConnection(req.body.connectionId);
@@ -84,6 +89,7 @@ exports.closeEntry = async (req, res, next) => {
 
             ws.sendMessageToSocket(req.body.connectionId, {
                 success: true,
+                eventName: "ENTRY_CLOSED",
                 message: "Entry Closed Successfully!",
                 data: newEntry
             });

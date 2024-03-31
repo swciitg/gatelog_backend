@@ -13,6 +13,7 @@ exports.connectionHandler = async(socket, req) => {
             socket.send(JSON.stringify({connectionId: socket.connectionId}));
             setTimeout(() => {
                 socket.send(JSON.stringify({
+                    eventName: "TIMEOUT",
                     message: 'Timeout'
                 }));
                 socket.close();
@@ -23,6 +24,7 @@ exports.connectionHandler = async(socket, req) => {
             if(err.response !== undefined){
                 socket.send(JSON.stringify({
                     success: false,
+                    eventName: "ERROR",
                     statusCode: err.response.status,
                     error: err.response.data.error,
                     message: err.response.data.message
@@ -30,6 +32,7 @@ exports.connectionHandler = async(socket, req) => {
             }else{
                 socket.send(JSON.stringify({
                     success: false,
+                    eventName: "ERROR",
                     statusCode: 500,
                     error: 'Internal Server Error',
                     message: err.message
@@ -38,6 +41,7 @@ exports.connectionHandler = async(socket, req) => {
         }else{
             socket.send(JSON.stringify({
                 success: false,
+                eventName: "ERROR",
                 statusCode: err.statusCode,
                 error: err.name,
                 message: err.message
