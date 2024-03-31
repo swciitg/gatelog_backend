@@ -40,7 +40,7 @@ const khokhaEntrySchema = new Schema({
     type: String,
     required: true
   },
-  department: {
+  branch: {
     type: String,
     required: true
   },

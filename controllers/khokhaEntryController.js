@@ -17,7 +17,7 @@ exports.addNewEntry = async (req, res, next) => {
             rollNumber: req.body.rollNumber,
             hostel: req.body.hostel,
             program: req.body.program,
-            department: req.body.department,
+            branch: req.body.branch,
             outTime: Date(),
             phoneNumber: req.body.phoneNumber,
             roomNumber: req.body.roomNumber,
