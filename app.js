@@ -7,11 +7,13 @@ const khokhaEntryRouter = require('./routers/khokhaEntryRouter');
 const { errorHandler } = require("./middlewares/errorHandler");
 const mongoose=require("mongoose");
 const securityKeyMiddleware = require("./middlewares/securityKeyMiddleware");
+const { isConnectedHelper, closeConnectionHelper, sendMessageToSocketHelper } = require('./helpers/websocketHelper');
 
 const app = express();
 const server = http.createServer(app);
 const wss = new WebSocket.Server({ noServer: true });
 
+// UPGRADES HTTP CONNECTION TO WS FOR THE WEBSOCKET ENDPOINT
 server.on('upgrade', (req, socket, head) => {
     if(req.url === process.env.WEBSOCKET_CONNECTION_PATH){
         wss.handleUpgrade(req, socket, head, (ws) => {
@@ -33,33 +35,10 @@ app.use(errorHandler);
 
 wss.on('connection', connectionHandler);
 
-exports.sendMessageToSocket = (connectionId, data) => {
-    wss.clients.forEach((client) => {
-        if(client.connectionId == connectionId){
-            if(client.readyState === WebSocket.OPEN){
-                client.send(JSON.stringify(data));
-            }
-        }
-    });
-}
+exports.sendMessageToSocket = (id, data) => sendMessageToSocketHelper(wss, id, data);
+exports.isConnected = (id) => isConnectedHelper(wss, id);
+exports.closeConnection = (id) => closeConnectionHelper(wss, id);
 
-exports.isConnected = (connectionId) => {
-    var isClientConnected = false;
-    wss.clients.forEach((client) => {
-        if(client.connectionId === connectionId){
-            isClientConnected = true;
-        }
-    });
-    return isClientConnected;
-}
-
-exports.closeConnection = (connectionId) => {
-    wss.clients.forEach((client) => {
-        if(client.connectionId === connectionId){
-            client.close();
-        }
-    });
-}
 
 server.listen(process.env.PORT, async() => {
     try{

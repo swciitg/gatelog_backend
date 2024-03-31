@@ -1,5 +1,5 @@
 const axios = require('axios');
-const { verifyAuthentication } = require('../helpers/auth');
+const { verifyAuthentication } = require('../helpers/verifyAuthentication');
 const uuid = require('uuid');
 
 exports.connectionHandler = async(socket, req) => {
