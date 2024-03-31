@@ -10,7 +10,10 @@ exports.connectionHandler = async(socket, req) => {
             socket.close();
         }else{
             socket.connectionId = uuid.v4();
-            socket.send(JSON.stringify({connectionId: socket.connectionId}));
+            socket.send(JSON.stringify({
+                eventName: 'CONNECTION',
+                connectionId: socket.connectionId
+            }));
             setTimeout(() => {
                 socket.send(JSON.stringify({
                     eventName: "TIMEOUT",
