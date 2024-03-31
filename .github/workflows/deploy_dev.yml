@@ -27,7 +27,7 @@ jobs:
             cd /webapps/test-servers/khokha_entry_backend
             sudo chown "$USER":"$USER" /home/"$USER"/.docker -R
             sudo chmod g+rwx "$HOME/.docker" -R
-            git checkout main
+            git checkout dev
             git fetch
             git pull
             docker compose -f docker-compose.dev.yml up -d --build
