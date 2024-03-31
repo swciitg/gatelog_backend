@@ -1,3 +1,5 @@
+const { WebSocket } = require("ws");
+
 exports.isConnectedHelper = (wss, connectionId) => {
     var isClientConnected = false;
     wss.clients.forEach((client) => {
