@@ -29,7 +29,7 @@ const khokhaEntrySchema = new Schema({
     required: false
   },
   rollNumber: {
-    type: Number,
+    type: String,
     required: true
   },
   roomNumber: {
