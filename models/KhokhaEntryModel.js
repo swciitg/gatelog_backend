@@ -25,27 +25,27 @@ const khokhaEntrySchema = new Schema({
   },
   outTime: {
     type: Date,
-    required:true
-  },
-  rollNumber: {
-    type: Number, 
     required: true
   },
   inTime: {
     type: Date,
     default: null,
-    required:false
+    required: false
+  },
+  rollNumber: {
+    type: String,
+    required: true
   },
   roomNumber: {
     type: String,
-    required:true
+    required: true
   },
   hostel: {
     type: String,
     enum: Object.values(Hostels),
     required:true
   },
-  department: {
+  branch: {
     type: String,
     enum: Object.values(Branch),
     required:true
@@ -67,4 +67,4 @@ const khokhaEntrySchema = new Schema({
 
 const KhokhaEntryModel = mongoose.model('KhokhaEntryModel', khokhaEntrySchema);
 
-module.exports = MediaKeyMessageEventhokhaEntryModel;
+module.exports = KhokhaEntryModel;

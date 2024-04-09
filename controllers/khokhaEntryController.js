@@ -24,7 +24,7 @@ exports.addNewEntry = async (req, res, next) => {
             destination: req.body.destination,
         });
 
-
+        
         ws.sendMessageToSocket(req.body.connectionId, {
             success: true,
             eventName: "ENTRY_ADDED",

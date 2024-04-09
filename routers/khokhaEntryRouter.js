@@ -3,8 +3,6 @@ const khokhaEntryRouter = express.Router();
 const khokhaController = require("../controllers/khokhaEntryController");
 const khokhaHistoryController=require("../controllers/khokhaHistoryController");
 
-// TODO: Implement these middlewares
-// const { verifyUserRequest, restrictIfGuest } = require("../middlewares/userAuth.js");
 
 khokhaEntryRouter.post("/newEntry", // verifyUserRequest, restrictIfGuest,
     khokhaController.addNewEntry
