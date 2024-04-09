@@ -19,20 +19,19 @@ const khokhaEntrySchema = new Schema({
     type: Number,
     required: true
   },
-  outgoingLocation: {
+  destination: {
     type: String,
     required: true
   },
-  exitTime: {
+  outTime: {
     type: Date,
-    default: new Date,
-    required:false
+    required:true
   },
   rollNumber: {
     type: Number, 
     required: true
   },
-  entryTime: {
+  inTime: {
     type: Date,
     default: null,
     required:false
@@ -56,19 +55,16 @@ const khokhaEntrySchema = new Schema({
     enum: Object.values(Program),
     required:true
   },
-  status: {
+  isClosed: {
     type: Boolean,
-    default:false
+    default:false,
+    required:false
   },
-  connectionId:{
-    type:String,
-    required:true
-  }
  
 }, {
   timestamps: true,
 });
 
-const khokhaEntryModel = mongoose.model('KhokhaEntryModel', khokhaEntrySchema);
+const KhokhaEntryModel = mongoose.model('KhokhaEntryModel', khokhaEntrySchema);
 
-module.exports = khokhaEntryModel;
+module.exports = MediaKeyMessageEventhokhaEntryModel;

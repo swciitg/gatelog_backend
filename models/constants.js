@@ -1,3 +1,8 @@
+exports.onestopUserEndpoint = 'https://swc.iitg.ac.in' + 
+    (process.env.NODE_ENV === 'dev' ? '/test' : '') + '/onestop/api/v3/user';
+
+exports.guestOutlookEmail = 'guest@onestop.swc.iitg.ac.in';
+
 const Hostels = {
     Brahmaputra: "Brahmaputra",
     Kameng: "Kameng",
@@ -44,4 +49,4 @@ const Program={
     phD:"PhD"
 }
 
-module.exports = { Hostels, Branch, Program };
+module.exports = { Hostels, Branch, Program,onestopUserEndpoint };

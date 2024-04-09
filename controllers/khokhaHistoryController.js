@@ -1,9 +1,9 @@
-let khokhaEntryModel = require('../models/khokhaEntryModel');
+const KhokhaEntryModel = require('../models/KhokhaEntryModel');
 
 exports.userHistory = async (req, res, next) => {
     const rollNo = req.params.rollno;
     try {
-        const history = await khokhaEntryModel.findOne({ rollNo: rollNo });
+        const history = await KhokhaEntryModel.findOne({ rollNo: rollNo });
         if (!history) {
             return res.status(404).json({ message: "No History" });
         } else {
