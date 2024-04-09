@@ -2,6 +2,10 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
+const Hostels = require('./constants').Hostels;
+const Branch = require('./constants').Branch;
+const Program = require('./constants').Program;
+
 const khokhaEntrySchema = new Schema({
   outlookEmail: {
     type: String,
@@ -39,14 +43,17 @@ const khokhaEntrySchema = new Schema({
   },
   hostel: {
     type: String,
+    enum: Object.values(Hostels),
     required:true
   },
   department: {
     type: String,
+    enum: Object.values(Branch),
     required:true
   },
   program: {
     type: String,
+    enum: Object.values(Program),
     required:true
   },
   status: {
