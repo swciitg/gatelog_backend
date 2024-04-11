@@ -2,9 +2,9 @@ const mongoose = require('mongoose');
 
 const Schema = mongoose.Schema;
 
-const Hostels = require('./constants').Hostels;
-const Branch = require('./constants').Branch;
-const Program = require('./constants').Program;
+const Hostels = require('./enums').Hostels;
+const Branch = require('./enums').Branch;
+const Program = require('./enums').Program;
 
 const khokhaEntrySchema = new Schema({
   outlookEmail: {
