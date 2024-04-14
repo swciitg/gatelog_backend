@@ -1,7 +1,10 @@
-const express = require("express");
+// const express = require("express");
+import express from 'express'
 const khokhaEntryRouter = express.Router();
-const khokhaController = require("../controllers/khokhaEntryController");
-const khokhaHistoryController=require("../controllers/khokhaHistoryController");
+// const khokhaController = require("../controllers/khokhaEntryController");
+import {khokhaController} from '../controllers/khokhaEntryController.js';
+// const khokhaHistoryController=require("../controllers/khokhaHistoryController");
+import {khokhaHistoryController} from '../controllers/khokhaHistoryController.js'
 
 
 khokhaEntryRouter.post("/newEntry", // verifyUserRequest, restrictIfGuest,
@@ -12,4 +15,4 @@ khokhaEntryRouter.patch("/closeEntry/:id", // verifyUserRequest, restrictIfGuest
 );
 khokhaEntryRouter.get("/History/:rollno",khokhaHistoryController.userHistory);
 
-module.exports = khokhaEntryRouter;
+export default khokhaEntryRouter;

@@ -1,4 +1,4 @@
-const Hostels = {
+export const Hostels = {
     Brahmaputra: "Brahmaputra",
     Kameng: "Kameng",
     Dihing: "Dihing",
@@ -16,7 +16,7 @@ const Hostels = {
     DisangWomen: "Disang (Women)"
 };
 
-const Branch={
+export const Branch={
     CSE:"Computer Science and Engineering",
     DSAI:"Data Science and Artificial Engineering",
     MNC:"Mathematics and Computing",
@@ -32,7 +32,7 @@ const Branch={
     BSBE:"Bioscience and Bioengineering"
 };
 
-const Program={
+export const Program={
     bTech:"B.Tech",
     bDes:"B.Des",
     mTech:"M.Tech",
@@ -43,5 +43,3 @@ const Program={
     dualPhD:"PhD (Dual)",
     phD:"PhD"
 }
-
-module.exports = { Hostels, Branch, Program };

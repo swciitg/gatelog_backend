@@ -1,13 +1,17 @@
-const axios = require('axios');
+// const axios = require('axios');
+import axios from 'axios';
 
-const { verifyAuthentication } = require('../helpers/verifyAuthentication');
+// const { verifyAuthentication } = require('../helpers/verifyAuthentication');
+import {verifyAuthentication} from '../helpers/verifyAuthentication.js';
 
-const uuid = require('uuid');
+// const uuid = require('uuid');
+import { v4 as uuidv4 } from 'uuid';
+const uuid = uuidv4();
 
 
 
 
-exports.connectionHandler = async(socket, req) => {
+export const connectionHandler = async(socket, req) => {
 
     try{
 

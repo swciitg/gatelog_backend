@@ -1,6 +1,7 @@
-const { CustomError } = require("../errors/customError");
+// const { CustomError } = require("../errors/customError");
+import { CustomError } from "../errors/customError.js";
 
-exports.errorHandler = (err, req, res, next) => {
+export const errorHandler = (err, req, res, next) => {
     console.log('Error Handler');
     console.log(err.message);
     if(err instanceof CustomError){

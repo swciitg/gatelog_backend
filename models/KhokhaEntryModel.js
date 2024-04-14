@@ -1,31 +1,33 @@
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const Schema = mongoose.Schema;
 
-const Hostels = require('./enums').Hostels;
-const Branch = require('./enums').Branch;
-const Program = require('./enums').Program;
+// const Hostels = require('./enums').Hostels;
+import {Hostels,Branch,Program} from './enums.js'
+// const Branch = require('./enums').Branch;
+// const Program = require('./enums').Program;
 
 const khokhaEntrySchema = new Schema({
   outlookEmail: {
     type: String,
-    required: true
+    required: [true,'Outlook email is a required field'],
   },
   name: {
     type: String,
-    required: true
+    required: [true,'Name is a required field'],
   },
   phoneNumber: {
     type: Number,
-    required: true
+    required: [true,'Phone Number is a required field'],
   },
   destination: {
     type: String,
-    required: true
+    required: [true,'Destination is a required field'],
   },
   outTime: {
     type: Date,
-    required: true
+    required: [true,'Out time is a required field'],
   },
   inTime: {
     type: Date,
@@ -34,26 +36,26 @@ const khokhaEntrySchema = new Schema({
   },
   rollNumber: {
     type: String,
-    required: true
+    required: [true,'Roll Number is a required field'],
   },
   roomNumber: {
     type: String,
-    required: true
+    required: [true,'Room Number is a required field'],
   },
   hostel: {
     type: String,
     enum: Object.values(Hostels),
-    required:true
+    required: [true,'Hostel is a required field'],
   },
   branch: {
     type: String,
     enum: Object.values(Branch),
-    required:true
+    required: [true,'Branch is a required field'],
   },
   program: {
     type: String,
     enum: Object.values(Program),
-    required:true
+    required: [true,'Program is a required field'],
   },
   isClosed: {
     type: Boolean,
@@ -67,4 +69,4 @@ const khokhaEntrySchema = new Schema({
 
 const KhokhaEntryModel = mongoose.model('KhokhaEntryModel', khokhaEntrySchema);
 
-module.exports = KhokhaEntryModel;
+export default KhokhaEntryModel;
