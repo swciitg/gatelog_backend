@@ -1,6 +1,7 @@
-const { CustomError } = require("./customError");
+// const { CustomError } = require("./customError");
+import { CustomError } from "./customError.js";
 
-exports.GuestAccessError = class GuestAccessError extends CustomError{
+export class GuestAccessError extends CustomError{
     constructor(message){
         super(message,403,"Guest Access Error");
     }

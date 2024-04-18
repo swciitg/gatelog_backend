@@ -1,4 +1,5 @@
-const { CustomError } = require("./customError");
+// const { CustomError } = require("./customError");
+import { CustomError } from "./customError.js";
 
 exports.NotFoundError = class NotFoundError extends CustomError{
     constructor(message){
