@@ -1,8 +1,6 @@
-// const ws = require("../app");
-import { sendMessageToSocket, isConnected, closeConnection } from '../app.js';
+import {closeConnection, isConnected, sendMessageToSocket} from '../app.js';
 
-// const KhokhaEntryModel = require('../models/khokhaEntryModel');
-import KhokhaEntryModel from '../models/khokhaEntryModel.js';
+import KhokhaEntryModel from '../models/KhokhaEntryModel.js';
 
 // TODO: Implement these controllers
 export const khokhaController = {
@@ -68,7 +66,7 @@ export const khokhaController = {
 
                 return res.status(404).json({
                     success: false,
-                    message: "Entry not found!" 
+                    message: "Entry not found!"
                 });
             } else {
                 if (entry.isClosed) {
@@ -88,7 +86,7 @@ export const khokhaController = {
                 const newEntry = await KhokhaEntryModel.findByIdAndUpdate(entryId, {
                     inTime: Date(),
                     isClosed: true
-                }, { new: true });
+                }, {new: true});
 
                 sendMessageToSocket(req.body.connectionId, {
                     success: true,

@@ -1,18 +1,13 @@
-// const express = require("express");
-import express from 'express'
-const khokhaEntryRouter = express.Router();
-// const khokhaController = require("../controllers/khokhaEntryController");
+import express from 'express';
 import {khokhaController} from '../controllers/khokhaEntryController.js';
-// const khokhaHistoryController=require("../controllers/khokhaHistoryController");
-import {khokhaHistoryController} from '../controllers/khokhaHistoryController.js'
+import {khokhaHistoryController} from '../controllers/khokhaHistoryController.js';
 
+const khokhaEntryRouter = express.Router();
 
-khokhaEntryRouter.post("/newEntry", // verifyUserRequest, restrictIfGuest,
-    khokhaController.addNewEntry
-);
-khokhaEntryRouter.patch("/closeEntry/:id", // verifyUserRequest, restrictIfGuest,
-    khokhaController.closeEntry
-);
-khokhaEntryRouter.get("/History/:rollno",khokhaHistoryController.userHistory);
+khokhaEntryRouter.post("/newEntry", khokhaController.addNewEntry);
+khokhaEntryRouter.patch("/closeEntry/:id", khokhaController.closeEntry);
+
+// TODO: USE AUTH MIDDLEWARE INSTEAD OF ROLL NUMBER PARAM
+khokhaEntryRouter.get("/history/:rollNo", khokhaHistoryController.userHistory);
 
 export default khokhaEntryRouter;
