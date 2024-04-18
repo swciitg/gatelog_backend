@@ -19,12 +19,8 @@ wss.on('connection', connectionHandler);
 
 // UPGRADES HTTP CONNECTION TO WS FOR THE WEBSOCKET ENDPOINT
 server.on('upgrade', (req, socket, head) => {
-    socket.on('error', function onSocketError() {
-    });
 
     if (req.url === process.env.WEBSOCKET_CONNECTION_PATH) {
-        socket.removeListener('error', function onSocketError() {
-        });
 
         wss.handleUpgrade(req, socket, head, (ws) => {
             wss.emit('connection', ws, req);

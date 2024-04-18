@@ -1,19 +1,17 @@
 import axios from 'axios';
 import {verifyAuthentication} from '../helpers/verifyAuthentication.js';
 
-import {v4 as uuidv4} from 'uuid';
-
-const uuid = uuidv4();
+import {v4} from 'uuid';
 
 
-export const connectionHandler = async (socket, req, _client) => {
-    socket.on('error', console.error);
+export const connectionHandler = async (socket, req) => {
     try {
         const isValidUser = await verifyAuthentication(req);
+
         if (isValidUser === false) {
             socket.close();
         } else {
-            socket.connectionId = uuid.v4();
+            socket.connectionId = v4();
             socket.send(JSON.stringify({
                 eventName: 'CONNECTION',
                 connectionId: socket.connectionId
