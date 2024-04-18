@@ -1,6 +1,7 @@
-const { WebSocket } = require("ws");
+// const { WebSocket } = require("ws");
+import WebSocket from "ws";
 
-exports.isConnectedHelper = (wss, connectionId) => {
+export const isConnectedHelper = (wss, connectionId) => {
     var isClientConnected = false;
     wss.clients.forEach((client) => {
         if(client.connectionId === connectionId){
@@ -10,7 +11,7 @@ exports.isConnectedHelper = (wss, connectionId) => {
     return isClientConnected;
 }
 
-exports.closeConnectionHelper = (wss, connectionId) => {
+export const closeConnectionHelper = (wss, connectionId) => {
     wss.clients.forEach((client) => {
         if(client.connectionId === connectionId){
             client.close();
@@ -18,7 +19,7 @@ exports.closeConnectionHelper = (wss, connectionId) => {
     });
 }
 
-exports.sendMessageToSocketHelper = (wss, connectionId, data) => {
+export const sendMessageToSocketHelper = (wss, connectionId, data) => {
     wss.clients.forEach((client) => {
         if(client.connectionId == connectionId){
             if(client.readyState === WebSocket.OPEN){

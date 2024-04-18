@@ -1,7 +1,8 @@
-const { CustomError } = require("./customError");
+// const { CustomError } = require("./customError");
+import { CustomError } from "./customError.js";
 
 
-exports.NotAuthorizedError = class NotAuthorizedError extends CustomError{
+export const NotAuthorizedError = class NotAuthorizedError extends CustomError{
     constructor(message){
         super(message, 403, 'Forbidden');
     }

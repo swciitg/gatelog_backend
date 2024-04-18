@@ -1,15 +1,17 @@
-const axios = require('axios');
-const { verifyAuthentication } = require('../helpers/verifyAuthentication');
-const uuid = require('uuid');
+import axios from 'axios';
+import {verifyAuthentication} from '../helpers/verifyAuthentication.js';
 
-exports.connectionHandler = async(socket, req) => {
-    try{
+import {v4} from 'uuid';
+
+
+export const connectionHandler = async (socket, req) => {
+    try {
         const isValidUser = await verifyAuthentication(req);
 
-        if(isValidUser === false){
+        if (isValidUser === false) {
             socket.close();
-        }else{
-            socket.connectionId = uuid.v4();
+        } else {
+            socket.connectionId = v4();
             socket.send(JSON.stringify({
                 eventName: 'CONNECTION',
                 connectionId: socket.connectionId
@@ -22,9 +24,9 @@ exports.connectionHandler = async(socket, req) => {
                 socket.close();
             }, 15000);
         }
-    }catch(err){
-        if(axios.isAxiosError(err)){
-            if(err.response !== undefined){
+    } catch (err) {
+        if (axios.isAxiosError(err)) {
+            if (err.response !== undefined) {
                 socket.send(JSON.stringify({
                     success: false,
                     eventName: "ERROR",
@@ -32,7 +34,7 @@ exports.connectionHandler = async(socket, req) => {
                     error: err.response.data.error,
                     message: err.response.data.message
                 }));
-            }else{
+            } else {
                 socket.send(JSON.stringify({
                     success: false,
                     eventName: "ERROR",
@@ -41,7 +43,7 @@ exports.connectionHandler = async(socket, req) => {
                     message: err.message
                 }))
             }
-        }else{
+        } else {
             socket.send(JSON.stringify({
                 success: false,
                 eventName: "ERROR",
@@ -52,5 +54,4 @@ exports.connectionHandler = async(socket, req) => {
         }
         socket.close();
     }
-    // Add event listeners
 }

@@ -1,8 +1,9 @@
-const { NotAuthorizedError } = require("../errors/notAuthorizedError");
+// const { NotAuthorizedError } = require("../errors/notAuthorizedError");
+import { NotAuthorizedError } from "../errors/notAuthorizedError.js";
 
-module.exports = (req, res, next) => {
+export default (req, res, next) => {
     if (req.headers["khokha-security-key"] !== process.env.KHOKHA_SECURITY_KEY) {
-        next(new NotAuthorizedError("Unauthorized Request"));
+        return next(new NotAuthorizedError("Unauthorized Request"));
     }
     next();
-}
+};

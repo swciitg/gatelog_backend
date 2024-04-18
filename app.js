@@ -1,21 +1,27 @@
-require('dotenv').config({path: `./.env.${process.env.NODE_ENV}`});
-const express = require("express");
-const http = require("http");
-const WebSocket = require("ws");
-const { connectionHandler } = require('./handlers/websocketHandler');
-const khokhaEntryRouter = require('./routers/khokhaEntryRouter');
-const { errorHandler } = require("./middlewares/errorHandler");
-const mongoose=require("mongoose");
-const securityKeyMiddleware = require("./middlewares/securityKeyMiddleware");
-const { isConnectedHelper, closeConnectionHelper, sendMessageToSocketHelper } = require('./helpers/websocketHelper');
+import express from 'express';
+import http from 'http';
+import mongoose from 'mongoose';
+import {connectionHandler} from './handlers/websocketHandler.js';
+import khokhaEntryRouter from './routers/khokhaEntryRouter.js';
+import {errorHandler} from './middlewares/errorHandler.js';
+import './helpers/websocketHelper.js';
+import {WebSocketServer} from 'ws';
+import securityKeyMiddleware from "./middlewares/securityKeyMiddleware.js";
+import {closeConnectionHelper, isConnectedHelper, sendMessageToSocketHelper} from "./helpers/websocketHelper.js";
+import {adminRouter} from "./admin_panel/adminConfig.js";
+
 
 const app = express();
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ noServer: true });
+const wss = new WebSocketServer({noServer: true});
+
+wss.on('connection', connectionHandler);
 
 // UPGRADES HTTP CONNECTION TO WS FOR THE WEBSOCKET ENDPOINT
 server.on('upgrade', (req, socket, head) => {
-    if(req.url === process.env.WEBSOCKET_CONNECTION_PATH){
+
+    if (req.url === process.env.WEBSOCKET_CONNECTION_PATH) {
+
         wss.handleUpgrade(req, socket, head, (ws) => {
             wss.emit('connection', ws, req);
         });
@@ -29,22 +35,23 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.json());
+app.use(process.env.ADMIN_PANEL_ROOT_PATH, adminRouter);
 app.use(securityKeyMiddleware);
+
 app.use(process.env.BASE_URL, khokhaEntryRouter);
+
 app.use(errorHandler);
 
-wss.on('connection', connectionHandler);
-
-exports.sendMessageToSocket = (id, data) => sendMessageToSocketHelper(wss, id, data);
-exports.isConnected = (id) => isConnectedHelper(wss, id);
-exports.closeConnection = (id) => closeConnectionHelper(wss, id);
+export const sendMessageToSocket = (id, data) => sendMessageToSocketHelper(wss, id, data);
+export const isConnected = (id) => isConnectedHelper(wss, id);
+export const closeConnection = (id) => closeConnectionHelper(wss, id);
 
 
-server.listen(process.env.PORT, async() => {
-    try{
-        await mongoose.connect(process.env.DATABASE_URI);
+server.listen(process.env.PORT, async () => {
+    try {
+        await mongoose.connect(process.env.DATABASE_URI + '/' + process.env.DATABASE_NAME);
         console.log("Connected to database");
-    }catch(e){
+    } catch (e) {
         console.log(e.message);
     }
     console.log(`Server running on port ${process.env.PORT}`);
