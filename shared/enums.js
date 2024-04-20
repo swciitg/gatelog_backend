@@ -35,13 +35,13 @@ export const Branch = {
 };
 
 export const Program = {
-    bTech: "B.Tech",
-    bDes: "B.Des",
-    mTech: "M.Tech",
-    mDes: "M.Des",
+    bTech: "BTECH",
+    bDes: "BDES",
+    mTech: "MTECH",
+    mDes: "MDES",
     mba: "MBA",
     ma: "MA",
-    mSc: "MSc",
-    dualPhD: "PhD (Dual)",
-    phD: "PhD"
+    mSc: "MSC",
+    dualPhD: "DUALPHD",
+    phD: "PHD"
 }
