@@ -1,12 +1,12 @@
 # This is a basic workflow that is manually triggered
-name: Pull and Deploy workflow
+name: Pull and Deploy Main
 
 # Controls when the action will run. Workflow runs when manually triggered using the UI
 # or API.
 on:
   workflow_dispatch:
   push:
-      branches:
+    branches:
       - "main"
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -15,15 +15,15 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - name: Establish ssh connection
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        key: ${{ secrets.SSH_KEY }}
-        passphrase: ${{ secrets.SSH_PASSPHRASE }}
-        port: ${{ secrets.SSH_PORT }}
-        username: ${{ secrets.SSH_USERNAME }}
-        script: |
+      - name: Establish ssh connection
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          port: ${{ secrets.SSH_PORT }}
+          username: ${{ secrets.SSH_USERNAME }}
+          script: |
             cd /webapps/khokha_entry_backend
             sudo chown "$USER":"$USER" /home/"$USER"/.docker -R
             sudo chmod g+rwx "$HOME/.docker" -R
