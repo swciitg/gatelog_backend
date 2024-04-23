@@ -1,47 +1,47 @@
 // TODO: UPDATE THE ENUMS WITH APPROPRIATE STRINGS
 
 export const Hostels = {
-    Brahmaputra: "Brahmaputra",
-    Kameng: "Kameng",
-    Dihing: "Dihing",
-    Barak: "Barak",
-    Kapili: "Kapili",
-    Lohit: "Lohit",
-    Manas: "Manas",
-    MarriedScholarsMen: "Married Scholars (Men)",
-    MarriedScholarsWomen: "Married Scholars (Women)",
-    Siang: "Siang",
-    Subansiri: "Subansiri",
-    Umiam: "Umiam",
-    Dhansiri: "Dhansiri",
-    DisangMen: "Disang (Men)",
-    DisangWomen: "Disang (Women)"
+    lohit: "LOHIT",
+    brahma: "BRAHMAPUTRA",
+    disang: "DISANG",
+    kameng: "KAMENG",
+    barak: "BARAK",
+    manas: "MANAS",
+    dihing: "DIHING",
+    umiam: "UMIAM",
+    siang: "SIANG",
+    kapili: "KAPILI",
+    dhansiri: "DHANSIRI",
+    subhansiri: "SUBHANSIRI",
+    msh: "MSH",
+    gaurang:"GAURANG",
+    dibang:"DIBANG"
 };
 
 export const Branch = {
-    CSE: "Computer Science and Engineering",
-    DSAI: "Data Science and Artificial Engineering",
-    MNC: "Mathematics and Computing",
-    EEE: "Electronics and Electrical Engineering",
-    ECE: "Electronics and Communication Engineering",
-    MECH: "Mechanical Engineering",
-    PHY: "Engineering Physics",
-    CIVIL: "Civil Engineering",
-    CST: "Chemical Science and Technology",
-    CL: "Chemical Engineering",
-    DOD: "Department of Design",
-    HSS: "Humanities and Social Science",
-    BSBE: "Bioscience and Bioengineering"
+    cse: "CSE",
+    dsai: "DSAI",
+    mnc: "MNC",
+    eee: "EEE",
+    ece: "ECE",
+    mech: "ME",
+    phy: "PHY",
+    civil: "CIVIL",
+    cst: "CST",
+    cl: "CL",
+    dod: "DOD",
+    hss: "HSS",
+    bsbe: "BSBE"
 };
 
 export const Program = {
-    bTech: "B.Tech",
-    bDes: "B.Des",
-    mTech: "M.Tech",
-    mDes: "M.Des",
+    bTech: "BTECH",
+    bDes: "BDES",
+    mTech: "MTECH",
+    mDes: "MDES",
     mba: "MBA",
     ma: "MA",
-    mSc: "MSc",
-    dualPhD: "PhD (Dual)",
-    phD: "PhD"
+    mSc: "MSC",
+    dualPhD: "DUALPHD",
+    phD: "PHD"
 }
