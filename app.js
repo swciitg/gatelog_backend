@@ -6,7 +6,6 @@ import khokhaEntryRouter from './routers/khokhaEntryRouter.js';
 import {errorHandler} from './middlewares/errorHandler.js';
 import './helpers/websocketHelper.js';
 import {WebSocketServer} from 'ws';
-import securityKeyMiddleware from "./middlewares/securityKeyMiddleware.js";
 import {closeConnectionHelper, isConnectedHelper, sendMessageToSocketHelper} from "./helpers/websocketHelper.js";
 import {adminRouter} from "./admin_panel/adminConfig.js";
 
@@ -36,7 +35,7 @@ app.use((req, res, next) => {
 });
 app.use(express.json());
 app.use(process.env.ADMIN_PANEL_ROOT_PATH, adminRouter);
-app.use(securityKeyMiddleware);
+// app.use(securityKeyMiddleware);
 
 app.use(process.env.BASE_URL, khokhaEntryRouter);
 
