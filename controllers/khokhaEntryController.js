@@ -6,7 +6,7 @@ import KhokhaEntryModel from '../models/KhokhaEntryModel.js';
 export const khokhaController = {
     addNewEntry: async (req, res, next) => {
         try {
-            if (isConnected(req.query.connectionId) === false) {
+            if (isConnected(req.body.connectionId) === false) {
                 return res.json({
                     success: false,
                     eventName: "ERROR",
@@ -14,22 +14,16 @@ export const khokhaController = {
                 });
             }
             const entry = await KhokhaEntryModel.create({
-                outlookEmail: req.query.outlookEmail,
+                outlookEmail: req.body.outlookEmail,
                 name: "req.body.name",
-                rollNumber: 123,
-                // rollNumber: req.body.rollNumber,
-                // hostel: req.body.hostel,
-                hostel: "LOHIT",
-                program: "BTECH",
-                branch: "ECE",
-                // program: req.body.program,
-                // branch: req.body.branch,
+                rollNumber: req.body.rollNumber,
+                hostel: req.body.hostel,
+                program: req.body.program,
+                branch: req.body.branch,
                 outTime: Date(),
-                phoneNumber: 9876543210,
-                // phoneNumber: req.body.phoneNumber,
-                // roomNumber: req.body.roomNumber,
-                roomNumber: "1234",
-                destination: req.query.destination,
+                phoneNumber: req.body.phoneNumber,
+                roomNumber: req.body.roomNumber,
+                destination: req.body.destination,
             });
 
             sendMessageToSocket(req.body.connectionId, {
