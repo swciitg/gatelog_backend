@@ -12,6 +12,7 @@ export const connectionHandler = async (socket, req) => {
             socket.close();
         } else {
             socket.connectionId = v4();
+            console.log(`New connection: ${socket.connectionId}`);
             socket.send(JSON.stringify({
                 eventName: 'CONNECTION',
                 connectionId: socket.connectionId
@@ -21,6 +22,7 @@ export const connectionHandler = async (socket, req) => {
                     eventName: "TIMEOUT",
                     message: 'Timeout'
                 }));
+                console.log(`Closing connection: ${socket.connectionId}`);
                 socket.close();
             }, 25000);
         }
@@ -52,6 +54,7 @@ export const connectionHandler = async (socket, req) => {
                 message: err.message
             }));
         }
+        console.log(`Closing connection: ${socket.connectionId}`);
         socket.close();
     }
 }

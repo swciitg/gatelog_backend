@@ -6,18 +6,17 @@ import KhokhaEntryModel from '../models/KhokhaEntryModel.js';
 export const khokhaController = {
     addNewEntry: async (req, res, next) => {
         try {
-            console.log(req);
             console.log(req.body);
             if (isConnected(req.body.connectionId) === false) {
                 return res.json({
                     success: false,
                     eventName: "ERROR",
-                    message: "Socket is not connected"
+                    message: "Socket is not connected!"
                 });
             }
             const entry = await KhokhaEntryModel.create({
                 outlookEmail: req.body.outlookEmail,
-                name: "req.body.name",
+                name: req.body.name,
                 rollNumber: req.body.rollNumber,
                 hostel: req.body.hostel,
                 program: req.body.program,
