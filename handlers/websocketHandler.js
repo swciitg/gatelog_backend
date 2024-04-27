@@ -22,7 +22,7 @@ export const connectionHandler = async (socket, req) => {
                     message: 'Timeout'
                 }));
                 socket.close();
-            }, 15000);
+            }, 25000);
         }
     } catch (err) {
         if (axios.isAxiosError(err)) {
