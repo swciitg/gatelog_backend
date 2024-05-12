@@ -1,10 +1,9 @@
-// const { WebSocket } = require("ws");
 import WebSocket from "ws";
 
 export const isConnectedHelper = (wss, connectionId) => {
-    var isClientConnected = false;
+    let isClientConnected = false;
     wss.clients.forEach((client) => {
-        if(client.connectionId === connectionId){
+        if (client.connectionId === connectionId) {
             isClientConnected = true;
         }
     });
@@ -13,7 +12,8 @@ export const isConnectedHelper = (wss, connectionId) => {
 
 export const closeConnectionHelper = (wss, connectionId) => {
     wss.clients.forEach((client) => {
-        if(client.connectionId === connectionId){
+        if (client.connectionId === connectionId) {
+            console.log(`Closing connection: ${connectionId}`);
             client.close();
         }
     });
@@ -21,8 +21,8 @@ export const closeConnectionHelper = (wss, connectionId) => {
 
 export const sendMessageToSocketHelper = (wss, connectionId, data) => {
     wss.clients.forEach((client) => {
-        if(client.connectionId == connectionId){
-            if(client.readyState === WebSocket.OPEN){
+        if (client.connectionId === connectionId) {
+            if (client.readyState === WebSocket.OPEN) {
                 client.send(JSON.stringify(data));
             }
         }
