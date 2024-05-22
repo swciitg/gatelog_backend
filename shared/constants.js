@@ -10,3 +10,5 @@ export const entryResourceProperties = [
 ];
 
 export const adminResourceProperties = ["email", "password", "roles"];
+
+export const guestUserEmail = "guest@onestop.swc.iitg.ac.in";

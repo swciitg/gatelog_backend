@@ -12,6 +12,8 @@ export const connectionHandler = async (socket, req) => {
             socket.close();
         } else {
             socket.connectionId = v4();
+            socket.authorization = req.headers.authorization;
+            socket.securityKey = req.headers['security-key'];
             console.log(`New connection: ${socket.connectionId}`);
             socket.send(JSON.stringify({
                 eventName: 'CONNECTION',
