@@ -28,3 +28,17 @@ export const sendMessageToSocketHelper = (wss, connectionId, data) => {
         }
     });
 }
+
+export const authHeadersHelper = (wss, connectionId) => {
+    wss.clients.forEach((client) => {
+        if (client.connectionId === connectionId) {
+            if (client.readyState === WebSocket.OPEN) {
+                return {
+                    authorization: client.authorization,
+                    securityKey: client.securityKey,
+                };
+            }
+        }
+    });
+    return {};
+}

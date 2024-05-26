@@ -2,7 +2,6 @@ import {closeConnection, isConnected, sendMessageToSocket} from '../app.js';
 
 import KhokhaEntryModel from '../models/KhokhaEntryModel.js';
 
-// TODO: Implement these controllers
 export const khokhaController = {
     addNewEntry: async (req, res, next) => {
         try {
@@ -11,20 +10,21 @@ export const khokhaController = {
                 return res.json({
                     success: false,
                     eventName: "ERROR",
-                    message: "Socket is not connected!"
+                    message: "QR Code is expired!\nPlease try again."
                 });
             }
             const entry = await KhokhaEntryModel.create({
-                outlookEmail: req.body.outlookEmail,
-                name: req.body.name,
-                rollNumber: req.body.rollNumber,
-                hostel: req.body.hostel,
-                program: req.body.program,
-                branch: req.body.branch,
+                outlookEmail: req.user.outlookEmail,
+                name: req.user.name,
+                rollNumber: req.user.rollNo,
+                hostel: req.user.hostel,
+                // program: req.user.program,
+                // branch: req.user.branch,
                 outTime: Date(),
-                phoneNumber: req.body.phoneNumber,
-                roomNumber: req.body.roomNumber,
+                phoneNumber: req.user.phoneNumber,
+                roomNumber: req.user.roomNo,
                 destination: req.body.destination,
+                exitGate: req.body.exitGate,
             });
 
             sendMessageToSocket(req.body.connectionId, {
@@ -51,7 +51,7 @@ export const khokhaController = {
                 return res.json({
                     success: false,
                     eventName: "ERROR",
-                    message: "Socket is not connected"
+                    message: "QR Code is expired!\nPlease try again."
                 });
             }
 
@@ -86,6 +86,7 @@ export const khokhaController = {
 
                 const newEntry = await KhokhaEntryModel.findByIdAndUpdate(entryId, {
                     inTime: Date(),
+                    entryGate: req.body.entryGate,
                     isClosed: true
                 }, {new: true});
 

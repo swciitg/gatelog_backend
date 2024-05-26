@@ -6,7 +6,12 @@ import khokhaEntryRouter from './routers/khokhaEntryRouter.js';
 import {errorHandler} from './middlewares/errorHandler.js';
 import './helpers/websocketHelper.js';
 import {WebSocketServer} from 'ws';
-import {closeConnectionHelper, isConnectedHelper, sendMessageToSocketHelper} from "./helpers/websocketHelper.js";
+import {
+    authHeadersHelper,
+    closeConnectionHelper,
+    isConnectedHelper,
+    sendMessageToSocketHelper
+} from "./helpers/websocketHelper.js";
 import {adminRouter} from "./admin_panel/adminConfig.js";
 import securityKeyMiddleware from "./middlewares/securityKeyMiddleware.js";
 
@@ -42,7 +47,7 @@ app.use(errorHandler);
 export const sendMessageToSocket = (id, data) => sendMessageToSocketHelper(wss, id, data);
 export const isConnected = (id) => isConnectedHelper(wss, id);
 export const closeConnection = (id) => closeConnectionHelper(wss, id);
-
+export const getAuthHeaders = (id) => authHeadersHelper(wss, id);
 
 server.listen(process.env.PORT, async () => {
     try {

@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import {Branch, Hostels, Program} from '../shared/enums.js'
+import {Hostels} from '../shared/enums.js'
 
 const khokhaEntrySchema = new mongoose.Schema({
     name: {
@@ -18,16 +18,16 @@ const khokhaEntrySchema = new mongoose.Schema({
         type: Number,
         required: [true, 'Phone Number is a required field'],
     },
-    program: {
-        type: String,
-        enum: Object.values(Program),
-        required: [true, 'Program is a required field'],
-    },
-    branch: {
-        type: String,
-        enum: Object.values(Branch),
-        required: [true, 'Branch is a required field'],
-    },
+    // program: {
+    //     type: String,
+    //     enum: Object.values(Program),
+    //     required: [true, 'Program is a required field'],
+    // },
+    // branch: {
+    //     type: String,
+    //     enum: Object.values(Branch),
+    //     required: [true, 'Branch is a required field'],
+    // },
     hostel: {
         type: String,
         enum: Object.values(Hostels),
@@ -43,12 +43,21 @@ const khokhaEntrySchema = new mongoose.Schema({
     },
     outTime: {
         type: Date,
-        required: [true, 'Out Time is a required field'],
+        required: [true, 'Check-Out Time is a required field'],
     },
     inTime: {
         type: Date,
         default: null,
         required: false
+    },
+    exitGate: {
+        type: String,
+        required: [true, 'Exit Gate is a required field'],
+    },
+    entryGate: {
+        type: String,
+        default: null,
+        required: false,
     },
     isClosed: {
         type: Boolean,
