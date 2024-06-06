@@ -18,7 +18,7 @@ export const getUserInfo = async (req, res, next) => {
     }
 }
 
-export const verifyAuthentication = async (req, res, next) => {
+export const verifyUserInfo = async (req, res, next) => {
     try {
         const user = await getOnestopUser(req.headers.authorization, req.headers['security-key']);
         if (user.outlookEmail === guestUserEmail) {
