@@ -8,7 +8,6 @@ const khokhaEntryRouter = express.Router();
 khokhaEntryRouter.post("/newEntry", getUserInfo, khokhaController.addNewEntry);
 khokhaEntryRouter.patch("/closeEntry/:id", khokhaController.closeEntry);
 
-// TODO: USE AUTH MIDDLEWARE INSTEAD OF ROLL NUMBER PARAM
-khokhaEntryRouter.get("/history/:rollNo", khokhaHistoryController.userHistory);
+khokhaEntryRouter.get("/history", getUserInfo, khokhaHistoryController.userHistory);
 
 export default khokhaEntryRouter;

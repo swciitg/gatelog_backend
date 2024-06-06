@@ -1,4 +1,5 @@
 import {closeConnection, isConnected, sendMessageToSocket} from '../app.js';
+import {RequestValidationError} from "../errors/requestValidationError.js";
 
 import KhokhaEntryModel from '../models/KhokhaEntryModel.js';
 
@@ -13,13 +14,20 @@ export const khokhaController = {
                     message: "QR Code is expired!\nPlease try again."
                 });
             }
+            if(req.user._id !== req.body.userId){
+                sendMessageToSocket(req.body.connectionId, {
+                    success: false,
+                    eventName: "ERROR",
+                    message: "Conflicting Credentials!",
+                });
+                closeConnection(req.body.connectionId);
+                next(new RequestValidationError("Conflicting Credentials!"));
+            }
             const entry = await KhokhaEntryModel.create({
                 outlookEmail: req.user.outlookEmail,
                 name: req.user.name,
                 rollNumber: req.user.rollNo,
                 hostel: req.user.hostel,
-                // program: req.user.program,
-                // branch: req.user.branch,
                 outTime: Date(),
                 phoneNumber: req.user.phoneNumber,
                 roomNumber: req.user.roomNo,
