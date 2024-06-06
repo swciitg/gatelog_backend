@@ -17,3 +17,17 @@ export const getUserInfo = async (req, res, next) => {
         next(e);
     }
 }
+
+export const verifyAuthentication = async (req, res, next) => {
+    try {
+        const user = await getOnestopUser(req.headers.authorization, req.headers['security-key']);
+        if (user.outlookEmail === guestUserEmail) {
+            next(new GuestAccessError("Can't Access this feature in Guest Mode"));
+        } else {
+            req.user = user;
+            next();
+        }
+    } catch (e) {
+        next(e);
+    }
+}
