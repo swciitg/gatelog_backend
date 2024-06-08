@@ -1,4 +1,3 @@
-// const { NotAuthorizedError } = require("../errors/notAuthorizedError");
 import { NotAuthorizedError } from "../errors/notAuthorizedError.js";
 
 export default (req, res, next) => {
