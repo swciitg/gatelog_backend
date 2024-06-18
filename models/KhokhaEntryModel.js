@@ -18,16 +18,6 @@ const khokhaEntrySchema = new mongoose.Schema({
         type: Number,
         required: [true, 'Phone Number is a required field'],
     },
-    // program: {
-    //     type: String,
-    //     enum: Object.values(Program),
-    //     required: [true, 'Program is a required field'],
-    // },
-    // branch: {
-    //     type: String,
-    //     enum: Object.values(Branch),
-    //     required: [true, 'Branch is a required field'],
-    // },
     hostel: {
         type: String,
         enum: Object.values(Hostels),
@@ -41,20 +31,20 @@ const khokhaEntrySchema = new mongoose.Schema({
         type: String,
         required: [true, 'Destination is a required field'],
     },
-    outTime: {
+    checkOutTime: {
         type: Date,
         required: [true, 'Check-Out Time is a required field'],
     },
-    inTime: {
+    checkInTime: {
         type: Date,
         default: null,
         required: false
     },
-    exitGate: {
+    checkOutGate: {
         type: String,
         required: [true, 'Exit Gate is a required field'],
     },
-    entryGate: {
+    checkInGate: {
         type: String,
         default: null,
         required: false,

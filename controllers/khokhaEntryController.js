@@ -28,11 +28,11 @@ export const khokhaController = {
                 name: req.user.name,
                 rollNumber: req.user.rollNo,
                 hostel: req.user.hostel,
-                outTime: Date(),
+                checkOutTime: Date(),
                 phoneNumber: req.user.phoneNumber,
                 roomNumber: req.user.roomNo,
                 destination: req.body.destination,
-                exitGate: req.body.exitGate,
+                checkOutGate: req.body.checkOutGate,
             });
 
             sendMessageToSocket(req.body.connectionId, {
@@ -93,8 +93,8 @@ export const khokhaController = {
                 }
 
                 const newEntry = await KhokhaEntryModel.findByIdAndUpdate(entryId, {
-                    inTime: Date(),
-                    entryGate: req.body.entryGate,
+                    checkInTime: Date(),
+                    checkInGate: req.body.checkInGate,
                     isClosed: true
                 }, {new: true});
 
