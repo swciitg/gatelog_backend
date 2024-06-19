@@ -5,8 +5,8 @@ export const guestOutlookEmail = 'guest@onestop.swc.iitg.ac.in';
 
 export const entryResourceProperties = [
     "name", "rollNumber", "outlookEmail", "phoneNumber",
-    "program", "branch", "hostel", "roomNumber",
-    "destination", "outTime", "inTime", "isClosed"
+    "hostel", "roomNumber", "destination", "checkOutTime",
+    "checkOutGate", "checkInTime", "checkInGate", "isClosed"
 ];
 
 export const adminResourceProperties = ["email", "password", "roles"];

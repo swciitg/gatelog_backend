@@ -35,14 +35,14 @@ const khokhaEntrySchema = new mongoose.Schema({
         type: Date,
         required: [true, 'Check-Out Time is a required field'],
     },
+    checkOutGate: {
+        type: String,
+        required: [true, 'Exit Gate is a required field'],
+    },
     checkInTime: {
         type: Date,
         default: null,
         required: false
-    },
-    checkOutGate: {
-        type: String,
-        required: [true, 'Exit Gate is a required field'],
     },
     checkInGate: {
         type: String,
