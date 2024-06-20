@@ -44,9 +44,7 @@ app.use(errorHandler);
 export const sendMessageToSocket = (id, data) => sendMessageToSocketHelper(wss, id, data);
 export const isConnected = (id) => isConnectedHelper(wss, id);
 export const closeConnection = (id) => closeConnectionHelper(wss, id);
-export const getAuthHeaders = (id) => {
-    return authHeadersHelper(wss, id);
-}
+export const getAuthHeaders = (id) => authHeadersHelper(wss, id);
 
 server.listen(process.env.PORT, async () => {
     try {

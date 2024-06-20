@@ -30,15 +30,21 @@ export const sendMessageToSocketHelper = (wss, connectionId, data) => {
 }
 
 export const authHeadersHelper = (wss, connectionId) => {
+    let authorization = undefined;
+    let securityKey = undefined;
+
     wss.clients.forEach((client) => {
         if (client.connectionId === connectionId) {
+            console.log(`connectionId = ${connectionId}`);
             if (client.readyState === WebSocket.OPEN) {
-                return {
-                    authorization: client.authorization,
-                    securityKey: client.securityKey,
-                };
+                authorization = client.authorization;
+                securityKey = client.securityKey;
             }
         }
     });
-    return {};
+    
+    return {
+        authorization,
+        securityKey
+    };
 }
