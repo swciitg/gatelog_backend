@@ -26,7 +26,7 @@ export const connectionHandler = async (socket, req) => {
                 }));
                 console.log(`Closing connection: ${socket.connectionId}`);
                 socket.close();
-            }, 25000);
+            }, 60000);
         }
     } catch (err) {
         if (axios.isAxiosError(err)) {

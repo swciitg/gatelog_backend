@@ -21,7 +21,7 @@ export const khokhaController = {
                     message: "Conflicting Credentials!",
                 });
                 closeConnection(req.body.connectionId);
-                next(new RequestValidationError("Conflicting Credentials!"));
+                throw new RequestValidationError("Conflicting Credentials!");
             }
             const entry = await KhokhaEntryModel.create({
                 outlookEmail: req.user.outlookEmail,
