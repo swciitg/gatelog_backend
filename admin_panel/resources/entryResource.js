@@ -3,7 +3,8 @@ import verifyRoles from '../utils.js';
 import {entryResourceProperties} from "../../shared/constants.js";
 import roles from '../roles.js';
 
-const allowedRoles = [roles.KHOKHA_ENTRY, roles.SUPER_ADMIN];
+const readRoles = [roles.KHOKHA_ENTRY, roles.SUPER_ADMIN];
+const writeRoles = [roles.SUPER_ADMIN];
 
 export default {
     resource: KhokhaEntryModel,
@@ -13,11 +14,11 @@ export default {
         editProperties: entryResourceProperties,
         showProperties: entryResourceProperties,
         actions: {
-            list: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, allowedRoles)},
-            new: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, allowedRoles)},
-            filter: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, allowedRoles)},
-            edit: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, allowedRoles)},
-            delete: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, allowedRoles)},
+            list: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, readRoles)},
+            new: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, writeRoles)},
+            filter: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, readRoles)},
+            edit: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, writeRoles)},
+            delete: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, writeRoles)},
         },
     },
 }

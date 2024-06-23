@@ -11,7 +11,7 @@ export const khokhaController = {
                 return res.json({
                     success: false,
                     eventName: "ERROR",
-                    message: "QR Code is expired!\nPlease try again."
+                    message: "This QR Code Is No Longer Valid."
                 });
             }
             if(req.user._id !== req.body.userId){
@@ -38,14 +38,14 @@ export const khokhaController = {
             sendMessageToSocket(req.body.connectionId, {
                 success: true,
                 eventName: "ENTRY_ADDED",
-                message: "Entry Added to database!",
+                message: "Welcome! Check-in Successful",
                 data: entry
             });
             closeConnection(req.body.connectionId);
 
             res.json({
                 success: true,
-                message: "Entry added to database!"
+                message: "Welcome! Check-in Successful"
             });
         } catch (error) {
             next(error);
@@ -59,7 +59,7 @@ export const khokhaController = {
                 return res.json({
                     success: false,
                     eventName: "ERROR",
-                    message: "QR Code is expired!\nPlease try again."
+                    message: "This QR Code Is No Longer Valid."
                 });
             }
 
@@ -69,26 +69,26 @@ export const khokhaController = {
                 sendMessageToSocket(req.body.connectionId, {
                     success: false,
                     eventName: "ERROR",
-                    message: "Entry not found!"
+                    message: "Invalid Code. Please Scan a Valid QR."
                 });
                 closeConnection(req.body.connectionId);
 
                 return res.status(404).json({
                     success: false,
-                    message: "Entry not found!"
+                    message: "Invalid Code. Please Scan a Valid QR."
                 });
             } else {
                 if (entry.isClosed) {
                     sendMessageToSocket(req.body.connectionId, {
                         success: false,
                         eventName: "ERROR",
-                        message: "Entry Already Closed!",
+                        message: "Rescan Detected.\nNo Action Needed.",
                     });
                     closeConnection(req.body.connectionId);
 
                     return res.json({
                         success: false,
-                        message: "Entry Already Closed!"
+                        message: "Rescan Detected.\nNo Action Needed."
                     });
                 }
 
@@ -101,14 +101,14 @@ export const khokhaController = {
                 sendMessageToSocket(req.body.connectionId, {
                     success: true,
                     eventName: "ENTRY_CLOSED",
-                    message: "Entry Closed Successfully!",
+                    message: "Goodbye! Check-out Successful",
                     data: newEntry
                 });
                 closeConnection(req.body.connectionId);
 
                 return res.json({
                     success: true,
-                    message: "Entry Closed Successfully!"
+                    message: "Goodbye! Check-out Successful"
                 });
             }
         } catch (error) {
