@@ -12,9 +12,9 @@ AdminJS.registerAdapter(AdminJSMongoose);
 
 const adminJs = new AdminJS({
     resources: [khokhaEntryResource, adminResource],
-    rootPath: process.env.ADMIN_PANEL_ROOT_PATH,
-    loginPath: process.env.ADMIN_PANEL_ROOT_PATH + '/login',
-    logoutPath: process.env.ADMIN_PANEL_ROOT_PATH + '/logout',
+    rootPath: process.env.BASE_URL + '/admin',
+    loginPath: process.env.BASE_URL + '/admin/login',
+    logoutPath: process.env.BASE_URL + '/admin/logout',
     authenticate
 });
 
