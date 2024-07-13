@@ -36,7 +36,7 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.json());
-app.use(process.env.BASE_URL, adminRouter);
+app.use(process.env.BASE_URL + '/admin', adminRouter);
 app.use(process.env.BASE_URL, khokhaEntryRouter);
 
 app.use(errorHandler);
