@@ -7,7 +7,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
-      - '7500:4000'
+      - '7300:4000'
     env_file:
       - .env.prod
     networks:
