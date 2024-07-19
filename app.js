@@ -12,7 +12,7 @@ import {
     isConnectedHelper,
     sendMessageToSocketHelper
 } from "./helpers/websocketHelper.js";
-import {adminRouter} from "./admin_panel/adminConfig.js";
+import {adminRouter, adminJs} from "./admin_panel/adminConfig.js";
 
 const app = express();
 const server = http.createServer(app);
@@ -36,7 +36,10 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.json());
-app.use(process.env.BASE_URL + '/admin', adminRouter);
+app.get(adminJs.options.rootPath, (req, res) => {
+    res.redirect(`${adminJs.options.rootPath}/resources/KhokhaEntryModel`);
+});
+app.use(adminJs.options.rootPath, adminRouter);
 app.use(process.env.BASE_URL, khokhaEntryRouter);
 
 app.use(errorHandler);

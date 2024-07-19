@@ -1,10 +1,7 @@
 import KhokhaEntryModel from "../../models/KhokhaEntryModel.js";
-import verifyRoles from '../utils.js';
 import {entryResourceProperties} from "../../shared/constants.js";
-import roles from '../roles.js';
 
-const readRoles = [roles.KHOKHA_ENTRY, roles.SUPER_ADMIN];
-const writeRoles = [roles.SUPER_ADMIN];
+const isDevEnv = process.env.NODE_ENV === 'dev';
 
 export default {
     resource: KhokhaEntryModel,
@@ -14,11 +11,11 @@ export default {
         editProperties: entryResourceProperties,
         showProperties: entryResourceProperties,
         actions: {
-            list: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, readRoles)},
-            new: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, writeRoles)},
-            filter: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, readRoles)},
-            edit: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, writeRoles)},
-            delete: {isAccessible: ({currentAdmin}) => verifyRoles(currentAdmin, writeRoles)},
+            list: {isAccessible: true},
+            new: {isAccessible: isDevEnv},
+            filter: {isAccessible: true},
+            edit: {isAccessible: isDevEnv},
+            delete: {isAccessible: isDevEnv},
         },
     },
 }

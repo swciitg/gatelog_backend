@@ -26,7 +26,7 @@
   "dependencies": {
     "@adminjs/express": "^6.1.0",
     "@adminjs/mongoose": "^4.1.0",
-    "adminjs": "^7.8.1",
+    "adminjs": "^7.8.7",
     "axios": "^1.6.8",
     "bcrypt": "^5.1.1",
     "connect-mongodb-session": "^5.0.0",
