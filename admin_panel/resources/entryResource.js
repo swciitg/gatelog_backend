@@ -11,6 +11,7 @@ export default {
         editProperties: entryResourceProperties,
         showProperties: entryResourceProperties,
         actions: {
+            sort: {direction: 'desc'},
             list: {isAccessible: true},
             new: {isAccessible: isDevEnv},
             filter: {isAccessible: true},
