@@ -10,8 +10,10 @@ export default {
         filterProperties: entryResourceProperties,
         editProperties: entryResourceProperties,
         showProperties: entryResourceProperties,
-        sort: 'desc',
-        sortBy: 'checkOutTime',
+        sort: {
+            direction: 'desc',
+            sortBy: 'checkOutTime',
+        },
         actions: {
             list: {isAccessible: true, },
             new: {isAccessible: isDevEnv},
