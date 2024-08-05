@@ -29,7 +29,14 @@ export default {
                     const entries = await KhokhaEntryModel.find({
                         $or: [
                             { checkInTime: null },
-                            { checkInTime: { $gt: tenThirtyPM } }
+                            {
+                                $expr: {
+                                    $gt: [
+                                        { $hour: "$checkInTime" * 60 * 60 * 1000 + { $minute: "$checkInTime" * 60 * 1000 } + { $second: "$checkInTime" * 1000 } },
+                                        22 * 60 * 60 * 1000 + 30 * 60 * 1000
+                                    ]
+                                }
+                            }
                         ],
                     });
 
