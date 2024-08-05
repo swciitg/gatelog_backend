@@ -19,36 +19,6 @@ export default {
             new: {isAccessible: isDevEnv},
             edit: {isAccessible: isDevEnv},
             delete: {isAccessible: isDevEnv},
-            filterTime: {
-                actionType: 'resource',
-                icon: 'Filter',
-                handler: async (request, response, context) => {
-                    const tenThirtyPM = new Date();
-                    tenThirtyPM.setHours(22, 30, 0, 0);
-
-                    const entries = await KhokhaEntryModel.find({
-                        $or: [
-                            { checkInTime: null },
-                            {
-                                $expr: {
-                                    $gt: [
-                                        { $hour: "$checkInTime" * 60 * 60 * 1000 + { $minute: "$checkInTime" * 60 * 1000 } + { $second: "$checkInTime" * 1000 } },
-                                        22 * 60 * 60 * 1000 + 30 * 60 * 1000
-                                    ]
-                                }
-                            }
-                        ],
-                    });
-
-                    context.records = entries.map(entry => new context.record(entry));
-
-                    return {
-                        records: context.records,
-                    };
-                },
-                component: false, // Since this is a server-side action, no need for a custom component
-                label: 'Filter Late Entries',
-            },
         },
     },
 }
