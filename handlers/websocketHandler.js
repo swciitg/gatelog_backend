@@ -2,6 +2,7 @@ import axios from 'axios';
 import {verifyAuthentication} from '../helpers/verifyAuthentication.js';
 
 import {v4} from 'uuid';
+import { qrTimeOutPeriod } from '../shared/constants.js';
 
 
 export const connectionHandler = async (socket, req) => {
@@ -26,7 +27,7 @@ export const connectionHandler = async (socket, req) => {
                 }));
                 console.log(`Closing connection: ${socket.connectionId}`);
                 socket.close();
-            }, 60000);
+            }, qrTimeOutPeriod);
         }
     } catch (err) {
         if (axios.isAxiosError(err)) {

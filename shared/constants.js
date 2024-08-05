@@ -1,6 +1,8 @@
 export const onestopUserEndpoint = 'https://swc.iitg.ac.in' +
     (process.env.NODE_ENV === 'dev' ? '/test' : '') + '/onestop/api/v3/user';
 
+export const qrTimeOutPeriod = process.env.NODE_ENV === 'dev' ? 60000 : 10000;
+
 export const guestOutlookEmail = 'guest@onestop.swc.iitg.ac.in';
 
 export const entryResourceProperties = [
