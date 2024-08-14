@@ -1,3 +1,4 @@
+import { BulkDelete } from "adminjs";
 import KhokhaEntryModel from "../../models/KhokhaEntryModel.js";
 import {entryResourceProperties} from "../../shared/constants.js";
 
@@ -19,6 +20,7 @@ export default {
             new: {isAccessible: isDevEnv},
             edit: {isAccessible: isDevEnv},
             delete: {isAccessible: isDevEnv},
+            bulkDelete: {isAccessible: isDevEnv},
         },
     },
 }
