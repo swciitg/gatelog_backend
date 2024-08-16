@@ -38,14 +38,14 @@ export const khokhaController = {
             sendMessageToSocket(req.body.connectionId, {
                 success: true,
                 eventName: "ENTRY_ADDED",
-                message: "Welcome! Check-in Successful",
+                message: "Goodbye! Check-out Successful.",
                 data: entry
             });
             closeConnection(req.body.connectionId);
 
             res.json({
                 success: true,
-                message: "Welcome! Check-in Successful"
+                message: "Goodbye! Check-out Successful."
             });
         } catch (error) {
             next(error);
@@ -101,14 +101,14 @@ export const khokhaController = {
                 sendMessageToSocket(req.body.connectionId, {
                     success: true,
                     eventName: "ENTRY_CLOSED",
-                    message: "Goodbye! Check-out Successful",
+                    message: "Welcome! Check-in Successful.",
                     data: newEntry
                 });
                 closeConnection(req.body.connectionId);
 
                 return res.json({
                     success: true,
-                    message: "Goodbye! Check-out Successful"
+                    message: "Welcome! Check-in Successful."
                 });
             }
         } catch (error) {
