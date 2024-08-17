@@ -12,7 +12,7 @@ export const Hostels = {
     siang: "SIANG",
     kapili: "KAPILI",
     dhansiri: "DHANSIRI",
-    subhansiri: "SUBHANSIRI",
+    subansiri: "SUBANSIRI",
     msh: "MSH",
     gaurang:"GAURANG",
     dibang:"DIBANG"
