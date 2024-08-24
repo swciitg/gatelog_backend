@@ -5,114 +5,98 @@ import KhokhaEntryModel from '../models/KhokhaEntryModel.js';
 
 export const khokhaController = {
     addNewEntry: async (req, res, next) => {
-        try {
-            console.log(req.body);
-            if (isConnected(req.body.connectionId) === false) {
-                return res.json({
-                    success: false,
-                    eventName: "ERROR",
-                    message: "This QR Code Is No Longer Valid."
-                });
-            }
-            if(req.user._id !== req.body.userId){
-                sendMessageToSocket(req.body.connectionId, {
-                    success: false,
-                    eventName: "ERROR",
-                    message: "Conflicting Credentials!",
-                });
-                closeConnection(req.body.connectionId);
-                throw new RequestValidationError("Conflicting Credentials!");
-            }
-            const entry = await KhokhaEntryModel.create({
-                outlookEmail: req.user.outlookEmail,
-                name: req.user.name,
-                rollNumber: req.user.rollNo,
-                hostel: req.user.hostel,
-                checkOutTime: Date(),
-                phoneNumber: req.user.phoneNumber,
-                roomNumber: req.user.roomNo,
-                destination: req.body.destination,
-                checkOutGate: req.body.checkOutGate,
-            });
-
+        if (isConnected(req.body.connectionId) === false) {
+            throw new RequestValidationError("This QR Code is no longer valid!");
+        }
+        if(req.user._id !== req.body.userId){
             sendMessageToSocket(req.body.connectionId, {
-                success: true,
-                eventName: "ENTRY_ADDED",
-                message: "Goodbye! Check-out Successful.",
-                data: entry
+                eventName: "ERROR",
+                message: "Conflicting Credentials!",
             });
             closeConnection(req.body.connectionId);
-
-            res.json({
-                success: true,
-                message: "Goodbye! Check-out Successful."
-            });
-        } catch (error) {
-            next(error);
+            throw new RequestValidationError("Conflicting Credentials!");
         }
+        sendMessageToSocket(req.body.connectionId, {
+            eventName: "REQUEST_RECEIVED",
+            message: "Processing request...",
+        });
+        const entry = await KhokhaEntryModel.create({
+            outlookEmail: req.user.outlookEmail,
+            name: req.user.name,
+            rollNumber: req.user.rollNo,
+            hostel: req.user.hostel,
+            checkOutTime: Date(),
+            phoneNumber: req.user.phoneNumber,
+            roomNumber: req.user.roomNo,
+            destination: req.body.destination,
+            checkOutGate: req.body.checkOutGate,
+        });
+
+        sendMessageToSocket(req.body.connectionId, {
+            eventName: "ENTRY_ADDED",
+            message: "Goodbye! Check-out Successful.",
+            data: entry
+        });
+        closeConnection(req.body.connectionId);
+
+        res.json({
+            success: true,
+            message: "Goodbye! Check-out Successful."
+        });
     },
 
     closeEntry: async (req, res, next) => {
         const entryId = req.params.id;
-        try {
-            if (isConnected(req.body.connectionId) === false) {
-                return res.json({
-                    success: false,
-                    eventName: "ERROR",
-                    message: "This QR Code Is No Longer Valid."
-                });
-            }
+        if (isConnected(req.body.connectionId) === false) {
+            throw new RequestValidationError("This QR Code is no longer valid!");
+        }
 
-            const entry = await KhokhaEntryModel.findById(entryId);
+        sendMessageToSocket(req.body.connectionId, {
+            eventName: "REQUEST_RECEIVED",
+            message: "Processing request...",
+        });
 
-            if (!entry) {
+        const entry = await KhokhaEntryModel.findById(entryId);
+
+        if (!entry) {
+            sendMessageToSocket(req.body.connectionId, {
+                eventName: "ERROR",
+                message: "Invalid QR. Please Scan a Valid QR."
+            });
+            closeConnection(req.body.connectionId);
+
+            throw new RequestValidationError("Invalid QR. Please Scan a Valid QR.");
+        } else {
+            if (entry.isClosed) {
                 sendMessageToSocket(req.body.connectionId, {
-                    success: false,
                     eventName: "ERROR",
-                    message: "Invalid Code. Please Scan a Valid QR."
-                });
-                closeConnection(req.body.connectionId);
-
-                return res.status(404).json({
-                    success: false,
-                    message: "Invalid Code. Please Scan a Valid QR."
-                });
-            } else {
-                if (entry.isClosed) {
-                    sendMessageToSocket(req.body.connectionId, {
-                        success: false,
-                        eventName: "ERROR",
-                        message: "Rescan Detected.\nNo Action Needed.",
-                    });
-                    closeConnection(req.body.connectionId);
-
-                    return res.json({
-                        success: false,
-                        message: "Rescan Detected.\nNo Action Needed."
-                    });
-                }
-
-                const newEntry = await KhokhaEntryModel.findByIdAndUpdate(entryId, {
-                    checkInTime: Date(),
-                    checkInGate: req.body.checkInGate,
-                    isClosed: true
-                }, {new: true});
-
-                sendMessageToSocket(req.body.connectionId, {
-                    success: true,
-                    eventName: "ENTRY_CLOSED",
-                    message: "Welcome! Check-in Successful.",
-                    data: newEntry
+                    message: "Rescan Detected.\nNo Action Needed.",
                 });
                 closeConnection(req.body.connectionId);
 
                 return res.json({
-                    success: true,
-                    message: "Welcome! Check-in Successful."
+                    success: false,
+                    message: "Rescan Detected.\nNo Action Needed."
                 });
             }
-        } catch (error) {
-            next(error);
+
+            const newEntry = await KhokhaEntryModel.findByIdAndUpdate(entryId, {
+                checkInTime: Date(),
+                checkInGate: req.body.checkInGate,
+                isClosed: true
+            }, {new: true});
+
+            sendMessageToSocket(req.body.connectionId, {
+                eventName: "ENTRY_CLOSED",
+                message: "Welcome! Check-in Successful.",
+                data: newEntry
+            });
+            closeConnection(req.body.connectionId);
+
+            return res.json({
+                success: true,
+                message: "Welcome! Check-in Successful."
+            });
         }
     }
 };
