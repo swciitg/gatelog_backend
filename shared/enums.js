@@ -15,7 +15,8 @@ export const Hostels = {
     subansiri: "SUBANSIRI",
     msh: "MSH",
     gaurang:"GAURANG",
-    dibang:"DIBANG"
+    dibang:"DIBANG",
+    nonHosteller: "NON-HOSTELLER"
 };
 
 export const Branch = {
