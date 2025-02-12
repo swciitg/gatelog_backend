@@ -3,7 +3,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   build:
     name: View Logs
     runs-on: ubuntu-latest
@@ -17,5 +16,5 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USERNAME }}
           script: |
-            cd /webapps/khokha_entry_backend
+            cd /webapps/gatelog_backend
             docker-compose -f docker-compose.prod.yml logs --tail=1000

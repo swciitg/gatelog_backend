@@ -24,7 +24,7 @@ jobs:
           port: ${{ secrets.SSH_PORT }}
           username: ${{ secrets.SSH_USERNAME }}
           script: |
-            cd /webapps/khokha_entry_backend
+            cd /webapps/gatelog_backend
             sudo chown "$USER":"$USER" /home/"$USER"/.docker -R
             sudo chmod g+rwx "$HOME/.docker" -R
             git checkout main
