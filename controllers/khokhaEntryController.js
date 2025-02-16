@@ -41,7 +41,7 @@ export const khokhaController = {
 
         res.json({
             success: true,
-            message: "Goodbye! Check-out Successful."
+            message: "Goodbye!\nCheck-out Successful."
         });
     },
 
@@ -65,7 +65,7 @@ export const khokhaController = {
             });
             closeConnection(req.body.connectionId);
 
-            throw new RequestValidationError("Invalid QR. Please Scan a Valid QR.");
+            throw new RequestValidationError("Invalid QR.\nPlease Scan a Valid QR.");
         } else {
             if (entry.isClosed) {
                 sendMessageToSocket(req.body.connectionId, {
@@ -95,7 +95,7 @@ export const khokhaController = {
 
             return res.json({
                 success: true,
-                message: "Welcome! Check-in Successful."
+                message: "Welcome!\nCheck-in Successful."
             });
         }
     }
