@@ -17,7 +17,7 @@ export default {
         },
         actions: {
             list: {isAccessible: true, },
-            new: {isAccessible: isDevEnv},
+            new: {isAccessible: true},
             edit: {isAccessible: isDevEnv},
             delete: {isAccessible: isDevEnv},
             bulkDelete: {isAccessible: isDevEnv},
