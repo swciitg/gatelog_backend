@@ -2,10 +2,11 @@ import React from "react";
 import { Box, Button } from "@adminjs/design-system";
 import AdminJS from "adminjs";
 
+
 export const Dashboard = () => {
   const handleRedirect = () => {
     window.location.href =
-      AdminJS.env.BASE_URL + "/admin/resources/KhokhaEntryModel";
+      "admin/resources/KhokhaEntryModel";
   };
 
   return (

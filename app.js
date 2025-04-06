@@ -13,8 +13,11 @@ import {
     sendMessageToSocketHelper
 } from "./helpers/websocketHelper.js";
 import {adminRouter, adminJs} from "./admin_panel/adminConfig.js";
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
+
 const server = http.createServer(app);
 const wss = new WebSocketServer({noServer: true});
 
@@ -36,9 +39,9 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.json());
-app.get(adminJs.options.rootPath, (req, res) => {
-    res.redirect(`${adminJs.options.rootPath}/resources/KhokhaEntryModel`);
-});
+// app.get(adminJs.options.rootPath, (req, res) => {
+//     res.redirect(`${adminJs.options.rootPath}/resources/KhokhaEntryModel`);
+// });
 app.use(adminJs.options.rootPath, adminRouter);
 app.use(process.env.BASE_URL, khokhaEntryRouter);
 
