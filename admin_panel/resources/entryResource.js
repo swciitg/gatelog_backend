@@ -20,7 +20,7 @@ export default {
             new: {isAccessible: true},
             edit: {isAccessible: isDevEnv},
             delete: {isAccessible: isDevEnv},
-            bulkDelete: {isAccessible: true},
+            bulkDelete: {isAccessible: isDevEnv},
         },
     },
 }
