@@ -13,9 +13,7 @@ const authenticate = async(email, password) => {
     try {
         if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASSWORD) {
             return Promise.resolve({ email });
-        } else {
-            throw new Error('Invalid credentials');
-        }
+        } 
     } catch (error) {
         return Promise.reject(error);
     }
