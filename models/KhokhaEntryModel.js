@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import {Hostels} from '../shared/enums.js'
 
+
 const khokhaEntrySchema = new mongoose.Schema({
     name: {
         type: String,
@@ -38,6 +39,7 @@ const khokhaEntrySchema = new mongoose.Schema({
     checkOutGate: {
         type: String,
         required: [true, 'Exit Gate is a required field'],
+        enum: [ "Main_gate", "KV_gate", "Khoka_gate"]
     },
     checkInTime: {
         type: Date,
@@ -48,15 +50,12 @@ const khokhaEntrySchema = new mongoose.Schema({
         type: String,
         default: null,
         required: false,
+        enum: [ "Main_gate", "KV_gate", "Khoka_gate","AUTO_CLOSED"]
     },
     isClosed: {
         type: Boolean,
         default: false,
         required: false
-    },
-    autoClosed:{
-        type: Boolean,
-        required: false,
     }
 }, {
     timestamps: true,

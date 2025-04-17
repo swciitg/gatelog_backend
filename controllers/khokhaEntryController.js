@@ -8,7 +8,7 @@ export const khokhaController = {
         const history = await KhokhaEntryModel.find({ outlookEmail: req.user.outlookEmail, isClosed: false })
         history.forEach(element => {
             element.isClosed = true;
-            element.autoClosed = true;
+            element.checkOutGate = "AUTO_CLOSED";
             element.save();
         });
         if (isConnected(req.body.connectionId) === false) {
