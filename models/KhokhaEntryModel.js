@@ -39,7 +39,7 @@ const khokhaEntrySchema = new mongoose.Schema({
     checkOutGate: {
         type: String,
         required: [true, 'Exit Gate is a required field'],
-        enum: [ "Main_Gate", "KV_Gate", "Khoka_Gate"]
+        // enum: [ "Main_Gate", "KV_Gate", "Khoka_Gate"]
     },
     checkInTime: {
         type: Date,
@@ -50,7 +50,7 @@ const khokhaEntrySchema = new mongoose.Schema({
         type: String,
         default: null,
         required: false,
-        enum: [ "Main_Gate", "KV_Gate", "Khoka_Gate","AUTO_CLOSED"]
+        // enum: [ "Main_Gate", "KV_Gate", "Khoka_Gate","AUTO_CLOSED"]
     },
     isClosed: {
         type: Boolean,
