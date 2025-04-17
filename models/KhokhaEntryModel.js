@@ -54,6 +54,10 @@ const khokhaEntrySchema = new mongoose.Schema({
         default: false,
         required: false
     },
+    autoClosed:{
+        type: Boolean,
+        required: false,
+    }
 }, {
     timestamps: true,
 });

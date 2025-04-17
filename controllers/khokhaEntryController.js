@@ -5,6 +5,12 @@ import KhokhaEntryModel from '../models/KhokhaEntryModel.js';
 
 export const khokhaController = {
     addNewEntry: async (req, res, next) => {
+        const history = await KhokhaEntryModel.find({ outlookEmail: req.user.outlookEmail, isClosed: false })
+        history.array.forEach(element => {
+            element.isClosed = true;
+            element.autoClosed = true;
+            element.save();
+        });
         if (isConnected(req.body.connectionId) === false) {
             throw new RequestValidationError("This QR Code is no longer valid!");
         }
