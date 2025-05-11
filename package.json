@@ -25,6 +25,7 @@
   "homepage": "https://github.com/swciitg/khokha_entry_backend#readme",
   "dependencies": {
     "@adminjs/express": "^6.1.0",
+    "@adminjs/import-export": "^3.0.0",
     "@adminjs/mongoose": "^4.1.0",
     "adminjs": "^7.8.7",
     "axios": "^1.6.8",

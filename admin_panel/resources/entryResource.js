@@ -1,6 +1,8 @@
 import { BulkDelete } from "adminjs";
 import KhokhaEntryModel from "../../models/KhokhaEntryModel.js";
 import {entryResourceProperties} from "../../shared/constants.js";
+import importExportFeature from "@adminjs/import-export";
+import { componentLoader } from "../ui/loader.js";
 
 const isDevEnv = process.env.NODE_ENV === 'dev';
 
@@ -23,4 +25,7 @@ export default {
             bulkDelete: {isAccessible: isDevEnv},
         },
     },
+    features: [
+        importExportFeature({componentLoader})
+    ],
 }
