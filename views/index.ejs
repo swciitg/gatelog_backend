@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Portal</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7f6;
+      color: #333;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container {
+      background-color: #fff;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+      width: 80%;
+      max-width: 800px;
+      text-align: center;
+      position: relative;
+    }
+    h1 {
+      color: #2c3e50;
+      margin-bottom: 20px;
+    }
+    .logout-link {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      color: #e74c3c;
+      text-decoration: none;
+      font-weight: bold;
+      transition: color 0.3s ease;
+    }
+    .logout-link:hover {
+      color: #c0392b;
+    }
+    @media (max-width: 600px) {
+      .container {
+        width: 95%;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome, <%= user %>!</h1>
+    <a href="<%=process.env.BASE_URL%>/v1/admin/logout" class="logout-link">Logout</a>
+    <p>Welcome to the portal. Here you can do anything you want saabjiiii..... .</p>
+    <%=process.env.BASE_URL%>
+    <!-- Further functionality goes here -->
+  </div>
+</body>
+</html>
