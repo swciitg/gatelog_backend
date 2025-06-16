@@ -51,6 +51,7 @@ app.use((req, res, next) => {
     console.log(req.method + '\t' + req.url);
     next();
 });
+app.use(adminJs.options.rootPath, adminRouter);
 app.use(express.json());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -58,7 +59,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //     res.redirect(`${adminJs.options.rootPath}/resources/KhokhaEntryModel`);
 // });
 app.use(process.env.BASE_URL  + '/v1/admin', authRoutes);
-app.use(adminJs.options.rootPath, adminRouter);
+
 app.use(process.env.BASE_URL, khokhaEntryRouter);
 app.locals.BASE_URL = process.env.BASE_URL;
 app.use(errorHandler);

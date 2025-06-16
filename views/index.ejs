@@ -3,59 +3,311 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Portal</title>
+   <title>All Khokha Entries</title>
+   <!-- for jquery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- for datatable func-->
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script> 
+<!-- DataTables CSS -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <style>
+    
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f7f6;
-      color: #333;
+      background-color: #ececec;
+      color: #090909;
       margin: 0;
       padding: 20px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
+       box-shadow: inset 0 0 50px #787676;
     }
-    .container {
-      background-color: #fff;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-      width: 80%;
-      max-width: 800px;
-      text-align: center;
-      position: relative;
-    }
-    h1 {
-      color: #2c3e50;
-      margin-bottom: 20px;
-    }
+
+  
     .logout-link {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      color: #e74c3c;
+      position:absolute;
+      top: 30px;
+      right: 80px;
+      color: #20363d;
       text-decoration: none;
       font-weight: bold;
       transition: color 0.3s ease;
     }
+
     .logout-link:hover {
-      color: #c0392b;
+     color: #78878d;
     }
+
+ 
+    .container {
+      background-color:#ececec;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+      max-width: 95%;
+      margin: auto;
+      font-size: 1.1rem;
+    }
+
+    h1 {
+      color: #121213;
+      text-align: center;
+      margin-bottom: 30px;
+      font-weight: 500;
+    font-size: 3rem;
+    }
+
+
+
+   .dataTables_length{
+     padding-bottom: 20px;
+   }
+   
+     .dataTables_length select {
+       background-color: #1b1b1b;  
+       color: #090909;       
+       padding: 4px 8px;
+   }
+   .dataTables_length select option {
+       background-color: #ececec;
+       color: #090909;
+   }
+   .dataTables_paginate .paginate_button {
+       color: #090909 !important;
+       border: 1px solid #333 !important;
+       border-radius: 5px;
+       margin: 2px;
+   }
+   
+   
+   ::-webkit-scrollbar {
+       height: 10px;
+   }
+   
+   ::-webkit-scrollbar-track {
+       background: #d6d0d0;
+   }
+   
+   ::-webkit-scrollbar-thumb {
+       background: #5c6976; 
+       border-radius: 10px;
+   }
+   
+   ::-webkit-scrollbar-thumb:hover {
+       background: #888;
+   }
+
+
+   div.dataTables_scroll {
+    border-radius: 6px; 
+    overflow-x: auto;
+    border: 1px solid #444 !important;
+   }
+
+    table.dataTable thead {
+    background-color: #334a61; 
+    color: #f4f7f9d7;
+    border-radius: 15px 15px 0 0;
+   }
+
+    table.dataTable thead th,
+    table.dataTable tbody td {
+        text-align: center;
+        vertical-align: middle;
+        padding: 12px 25px; 
+   }
+
+
+    #entriesTable tbody tr {
+      cursor: default;
+    }
+  
+    #entriesTable tbody tr:hover {
+      background-color: rgba(128, 206, 241, 0.1) !important;
+      cursor: pointer;
+    }
+    
+
     @media (max-width: 600px) {
       .container {
-        width: 95%;
-        padding: 20px;
+        padding: 15px;
+      }
+      h1{
+        font-size: 2rem;
+        font-weight: 300;
       }
     }
   </style>
 </head>
 <body>
+   
+    
   <div class="container">
-    <h1>Welcome, <%= user %>!</h1>
+
+    <h1 id="welcomemsg"></h1>
     <a href="<%=process.env.BASE_URL%>/v1/admin/logout" class="logout-link">Logout</a>
-    <p>Welcome to the portal. Here you can do anything you want saabjiiii..... .</p>
-    <%=process.env.BASE_URL%>
-    <!-- Further functionality goes here -->
+
+  <h1 >All Khokha Entries</h1>
+
+  
+    <table id="entriesTable" class="display nowrap" style="width:100%">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Roll No</th>
+        <th>Outlook</th>
+        <th>Phone</th>
+        <th>Hostel</th>
+        <th>Room</th>
+        <th>Destination</th>
+        <th>Status</th>
+        <th>Gate</th>
+        <th>Check-Out</th>
+        <th>Check-In</th>
+        </tr>
+    </thead>
+    <tbody>
+      <% entries.forEach(entry => { %>
+        <tr>
+          <td><%= entry.name %></td>
+          <td><%= entry.rollNumber %></td>
+          <td><%= entry.outlookEmail %></td>
+          <td><%= entry.phoneNumber %></td>
+          <td><%= entry.hostel %></td>
+          <td><%= entry.roomNumber %></td>
+          <td><%= entry.destination %></td>
+          <td><%= entry.isClosed ? "Closed" : "Open" %></td>
+          <td>
+             <div><strong>Out:</strong> <%= entry.checkOutGate %></div>
+             <div><strong>In:</strong> <%= entry.checkInGate %></div>
+          </td>
+          <td><%= entry.checkOutTime.toLocaleString() %></td>
+          <td><%= entry.checkInTime ? entry.checkInTime.toLocaleString() : "—" %></td>
+        </tr>
+      <% }) %>
+    </tbody>
+  </table>
   </div>
+
+
+<!-- when clicked the whole box of entry details of that user is shown -->
+<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailsModalLabel">Entry Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modalContent">
+        <!-- entry details added here dynamically -->
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- for mobile functionality-->
+<script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const userEmail = "<%= user %>";
+    const text = `Welcome, ${userEmail}!`;
+    const element = document.getElementById("welcomemsg");
+    let index = 0;
+
+    function typeNextChar() {
+      if (index < text.length) {
+        element.textContent += text.charAt(index);
+        index++;
+        setTimeout(typeNextChar, 80);
+      }
+    }
+
+    typeNextChar();
+  });
+</script>
+
+<script>
+$(document).ready(function () {
+  
+  
+    const table = $('#entriesTable').DataTable({
+        scrollX: true,
+        paging: true,
+        searching: false,
+        ordering: true,
+        pageLength: 25,
+        lengthMenu: [1,5, 10, 25],
+        order: [[9, 'desc']] 
+       
+        
+  });
+
+let lastFetchedTime = new Date().toISOString(); 
+
+    setInterval(function () {
+        $.ajax({
+            url: "/khokha/entries/api?since=" + lastFetchedTime,
+            method: "GET",
+            success: function (newEntries) {
+                if (newEntries.length > 0) {
+                    newEntries.forEach(entry => {
+                        const newRow = [
+                            entry.name,
+                            entry.rollNumber,
+                            entry.outlookEmail,
+                            entry.phoneNumber,
+                            entry.hostel,
+                            entry.roomNumber,
+                            entry.destination,
+                            entry.isClosed ? "Closed" : "Open",
+                            `<div><strong>Out:</strong> ${entry.checkOutGate}<br><strong>In:</strong> ${entry.checkInGate}</div>`,
+                            new Date(entry.checkOutTime).toLocaleString(),
+                            entry.checkInTime ? new Date(entry.checkInTime).toLocaleString() : "—"
+                        ];
+
+                        table.row.add(newRow).draw(false);
+                    });
+
+                    lastFetchedTime = new Date().toISOString(); // updating the last time the data added
+                }
+            },
+            error: function (err) {
+                console.error("Error fetching new entries:", err);
+            }
+        });
+    }, 15000);
+  
+    // to Handle click event
+$('#entriesTable tbody').on('click', 'tr', function () {
+        const rowData = table.row(this).data();
+
+        //dynamically adds the entry details
+        const details = 
+        `
+          <p><strong>Name:</strong> ${rowData[0]}</p>
+          <p><strong>Roll No:</strong> ${rowData[1]}</p>
+          <p><strong>Outlook:</strong> ${rowData[2]}</p>
+          <p><strong>Phone:</strong> ${rowData[3]}</p>
+          <p><strong>Hostel:</strong> ${rowData[4]}</p>
+          <p><strong>Room:</strong> ${rowData[5]}</p>
+          <p><strong>Destination:</strong> ${rowData[6]}</p>
+          <p><strong>Check-Out:</strong> ${rowData[7]}</p>
+          <p><strong>Gate:</strong> ${rowData[8]}</p>
+          <p><strong>Check-In:</strong> ${rowData[9]}</p>
+          <p><strong>Status:</strong> ${rowData[10]}</p>
+           `;
+
+        $('#modalContent').html(details);
+        $('#detailsModal').modal('show');
+    });
+});
+
+</script>
 </body>
 </html>
