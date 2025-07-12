@@ -1,5 +1,7 @@
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
+import khokhaEntryModel from '../models/KhokhaEntryModel.js';
+
 dotenv.config();
 const user = {
   username: process.env.ADMIN_EMAIL,
@@ -27,11 +29,12 @@ export const login = (req, res) => {
 };
 
 
-export const getHomePage = (req, res) => {
+export const getHomePage = async(req, res) => {
+   const entries = await khokhaEntryModel.find().sort('-createdAt');
     if (!req.session.user) {
         return res.redirect(process.env.BASE_URL +'/v1/admin/login');
     }
-    res.render('index', {files:[] ,  user: req.session.user });
+    res.render('index', {files:[] , entries,  user: req.session.user });  
     }
 
 

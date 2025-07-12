@@ -21,7 +21,7 @@ khokhaEntryRouter.get("/entries" , async (req, res)=>{
     try{
        const entries= await khokhaEntryModel.find().sort('-createdAt');
         res.render("index", {
-             user: req.session.adminUser.email,
+             user: req.session.user,
              entries });
  } catch(err){
         res.status(500).send("Internal Server Error");
