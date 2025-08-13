@@ -148,7 +148,11 @@
     <a href="<%=process.env.BASE_URL%>/v1/admin/logout" class="logout-link">Logout</a>
 
   <h1 >All Khokha Entries</h1>
-
+<div class="d-flex justify-content-end mb-3">
+  <a class="btn btn-primary" href="<%= BASE_URL %>/entries/new">
+    + Add New Entry
+  </a>
+</div>
   
     <table id="entriesTable" class="display nowrap" style="width:100%">
     <thead>
