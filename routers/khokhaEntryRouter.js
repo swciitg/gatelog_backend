@@ -5,7 +5,8 @@ import { getUserInfo, verifyUserInfo } from "../middlewares/getUserInfo.js";
 import securityKeyMiddleware from "../middlewares/securityKeyMiddleware.js";
 import asyncErrorHandler from '../handlers/asyncErrorHandler.js';
 import KhokhaEntryModel from '../models/KhokhaEntryModel.js';
-
+import * as XLSX from 'xlsx';
+import { Hostels } from '../shared/enums.js';
 const khokhaEntryRouter = express.Router();
 
 khokhaEntryRouter.post(
@@ -147,6 +148,123 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
       );
     }
     next(err);
+  }
+});
+
+
+khokhaEntryRouter.get("/entries/export", /* verifyUserInfo, */ (req, res) => {
+  try {
+    const hostels = Object.values(Hostels || {});
+    res.render("export-entries", { BASE_URL: req.app.locals.BASE_URL, hostels });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+// ---- Handle Export (CSV/Excel)
+khokhaEntryRouter.post("/entries/export", async (req, res) => {
+  try {
+    const {
+      dateField = 'createdAt',
+      from,
+      to,
+      name,
+      rollNumber,
+      hostel,
+      roomNumber,
+      destination,
+      checkOutGate,
+      checkInGate,
+      isClosed,   // 'true' | 'false' | ''
+      format = 'csv'
+    } = req.body;
+
+    // Build query
+    const q = {};
+
+    // Date range
+    if (!from || !to) {
+      return res.status(400).send('Please provide both "from" and "to" date/time.');
+    }
+    const fromDate = new Date(from);
+    const toDate = new Date(to);
+    if (isNaN(fromDate) || isNaN(toDate)) {
+      return res.status(400).send('Invalid date format.');
+    }
+    q[dateField] = { $gte: fromDate, $lte: toDate };
+
+    // Optional string filters
+    if (name) {
+      q.name = { $regex: name, $options: 'i' }; // contains, case-insensitive
+    }
+    if (rollNumber) {
+      q.rollNumber = rollNumber; // exact
+    }
+    if (hostel) {
+      q.hostel = hostel;
+    }
+    if (roomNumber) {
+      q.roomNumber = roomNumber;
+    }
+    if (destination) {
+      q.destination = { $regex: destination, $options: 'i' };
+    }
+    if (checkOutGate) {
+      q.checkOutGate = checkOutGate;
+    }
+    if (checkInGate) {
+      q.checkInGate = checkInGate;
+    }
+    if (isClosed === 'true') q.isClosed = true;
+    if (isClosed === 'false') q.isClosed = false;
+
+    // Fetch
+    const docs = await KhokhaEntryModel.find(q).sort('-' + dateField).lean();
+
+    // Prepare flat rows for export (format dates nicely)
+    const rows = docs.map(d => ({
+      Name: d.name,
+      RollNumber: d.rollNumber,
+      OutlookEmail: d.outlookEmail,
+      PhoneNumber: d.phoneNumber,
+      Hostel: d.hostel,
+      RoomNumber: d.roomNumber,
+      Destination: d.destination,
+      CheckOutGate: d.checkOutGate,
+      CheckOutTime: d.checkOutTime ? new Date(d.checkOutTime).toISOString() : '',
+      CheckInGate: d.checkInGate || '',
+      CheckInTime: d.checkInTime ? new Date(d.checkInTime).toISOString() : '',
+      Status: d.isClosed ? 'Closed' : 'Open',
+      CreatedAt: d.createdAt ? new Date(d.createdAt).toISOString() : '',
+      UpdatedAt: d.updatedAt ? new Date(d.updatedAt).toISOString() : '',
+      _id: d._id?.toString() || ''
+    }));
+
+    const filenameBase = `khokha-entries-${dateField}-${fromDate.toISOString().slice(0,16)}_${toDate.toISOString().slice(0,16)}`.replace(/[:]/g, '-');
+
+    if (format === 'xlsx') {
+      // Excel
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(rows);
+      XLSX.utils.book_append_sheet(wb, ws, "Entries");
+      const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+      res.setHeader('Content-Disposition', `attachment; filename="${filenameBase}.xlsx"`);
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      return res.send(buf);
+    } else {
+      // CSV
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const csv = XLSX.utils.sheet_to_csv(ws);
+
+      res.setHeader('Content-Disposition', `attachment; filename="${filenameBase}.csv"`);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      return res.send(csv);
+    }
+  } catch (err) {
+    console.error("Export error:", err);
+    res.status(500).send("Export failed.");
   }
 });
 
