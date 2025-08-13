@@ -71,7 +71,10 @@ export const getAuthHeaders = (id) => authHeadersHelper(wss, id);
 
 server.listen(process.env.PORT, async () => {
     try {
-        await mongoose.connect(process.env.DATABASE_URI + '/' + process.env.DATABASE_NAME);
+        await mongoose.connect(process.env.DATABASE_URI, {
+        dbName: process.env.DATABASE_NAME,
+    });
+
         console.log("Connected to database");
     } catch (e) {
         console.log(e.message);
