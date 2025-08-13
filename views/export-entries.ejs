@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Export Khokha Entries</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <style>
+    body { background:#ececec; }
+    .container { max-width: 980px; background:#fff; margin-top: 30px; padding: 24px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,.1); }
+    .section { border:1px solid #e5e7eb; padding:16px; border-radius:10px; background:#fafafa; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="m-0">Export Khokha Entries</h3>
+    <a class="btn btn-outline-secondary" href="<%= BASE_URL %>/entries">← Back</a>
+  </div>
+
+  <form method="POST" action="<%= BASE_URL %>/entries/export">
+    <!-- Date filter -->
+    <div class="section mb-3">
+      <h5 class="mb-3">Date Filter</h5>
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label">Date Field</label>
+          <select class="form-select" name="dateField" required>
+            <option value="createdAt">Created At</option>
+            <option value="checkOutTime">Check-Out Time</option>
+            <option value="checkInTime">Check-In Time</option>
+          </select>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">From</label>
+          <input type="datetime-local" class="form-control" name="from" required/>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label">To</label>
+          <input type="datetime-local" class="form-control" name="to" required/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Field filters -->
+    <div class="section mb-3">
+      <h5 class="mb-3">Filters (optional)</h5>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Name (contains)</label>
+          <input type="text" class="form-control" name="name"/>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Roll Number (exact)</label>
+          <input type="text" class="form-control" name="rollNumber"/>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Hostel</label>
+          <select class="form-select" name="hostel">
+            <option value="">Any</option>
+            <% hostels.forEach(h => { %>
+              <option value="<%= h %>"><%= h %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Room Number (exact)</label>
+          <input type="text" class="form-control" name="roomNumber"/>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Destination (contains)</label>
+          <input type="text" class="form-control" name="destination"/>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Exit Gate</label>
+          <select class="form-select" name="checkOutGate">
+            <option value="">Any</option>
+            <option value="Main_Gate">Main_Gate</option>
+            <option value="KV_Gate">KV_Gate</option>
+            <option value="Khoka_Gate">Khoka_Gate</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Check-In Gate</label>
+          <select class="form-select" name="checkInGate">
+            <option value="">Any</option>
+            <option value="Main_Gate">Main_Gate</option>
+            <option value="KV_Gate">KV_Gate</option>
+            <option value="Khoka_Gate">Khoka_Gate</option>
+            <option value="AUTO_CLOSED">AUTO_CLOSED</option>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">Status</label>
+          <select class="form-select" name="isClosed">
+            <option value="">Any</option>
+            <option value="true">Closed</option>
+            <option value="false">Open</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div class="section mb-3">
+      <h5 class="mb-3">Output</h5>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Format</label>
+          <select class="form-select" name="format" required>
+            <option value="csv">CSV</option>
+            <option value="xlsx">Excel (.xlsx)</option>
+          </select>
+        </div>
+        <div class="col-md-6 d-flex align-items-end">
+          <button class="btn btn-success w-100" type="submit">Export</button>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+</body>
+</html>
