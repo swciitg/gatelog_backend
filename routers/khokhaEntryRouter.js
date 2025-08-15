@@ -8,6 +8,88 @@ import KhokhaEntryModel from '../models/KhokhaEntryModel.js';
 import * as XLSX from 'xlsx';
 import { Hostels } from '../shared/enums.js';
 const khokhaEntryRouter = express.Router();
+import crypto from "crypto";
+import dotenv from 'dotenv';
+dotenv.config();
+
+const GATELOG_SECRET_KEY = process.env.GATELOG_SECRET_KEY;
+const ONESTOP_LOOKUP_URL = process.env.ONESTOP_LOOKUP_URL; // e.g. http://localhost:9010/test/onestop/api/v3/gatelog/secure
+
+function hmacHex(rollNo) {
+  return crypto.createHmac("sha256", GATELOG_SECRET_KEY)
+    .update(String(rollNo), "utf8")
+    .digest("hex");
+}
+
+function decryptAesGcm(compact) {
+  const [ivB64, tagB64, ctB64] = String(compact).split(".");
+  if (!ivB64 || !tagB64 || !ctB64) throw new Error("Malformed encrypted payload");
+  const key = crypto.createHash("sha256").update(GATELOG_SECRET_KEY, "utf8").digest(); // 32B
+  const iv = Buffer.from(ivB64, "base64");
+  const tag = Buffer.from(tagB64, "base64");
+  const ct  = Buffer.from(ctB64, "base64");
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  const out = Buffer.concat([decipher.update(ct), decipher.final()]);
+  return out.toString("utf8");
+}
+
+khokhaEntryRouter.post("/entries/lookup", async (req, res) => {
+  try {
+    if (!GATELOG_SECRET_KEY) return res.status(500).send("Server misconfig: GATELOG_SECRET_KEY missing");
+    if (!ONESTOP_LOOKUP_URL) return res.status(500).send("Server misconfig: ONESTOP_LOOKUP_URL missing");
+
+    // Accept rollNumber
+    const rollNo = (req.body?.rollNo || req.body?.rollNumber || "").trim();
+    if (!rollNo) return res.status(400).send("rollNo is required");
+
+    // Build secure GET to Onestop
+    const token = hmacHex(rollNo);
+    const url = new URL(ONESTOP_LOOKUP_URL);
+    url.searchParams.set("rollNo", rollNo);
+    url.searchParams.set("token", token);
+
+    // Optional: debug log to confirm we’re actually calling Onestop
+    // console.log("[lookup] calling:", url.toString());
+
+    const upstream = await fetch(url.toString(), {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    });
+
+    if (!upstream.ok) {
+      const t = await upstream.text().catch(() => "");
+      return res.status(upstream.status).send(t || "External lookup failed");
+    }
+
+    // Expect { success: true, data: "<iv.tag.ct>" }
+    const secureResp = await upstream.json();
+    if (!secureResp?.success || !secureResp?.data) {
+      return res.status(502).send("Invalid response from secure lookup");
+    }
+    console.log("[lookup] secure response:", secureResp.data);
+
+    // Decrypt & map
+    const user = JSON.parse(decryptAesGcm(secureResp.data));
+
+    const outlookEmail = user.outlookEmail || "";
+    const phoneNumber =
+      typeof user.phoneNumber === "number"
+        ? String(user.phoneNumber).padStart(10, "0")
+        : (user.phoneNumber || "");
+
+    const hostel = user.hostel || "";
+    const roomNumber = user.roomNo || user.roomNumber || "";
+    const name = user.name || "";
+    console.log("[lookup] user:", { name, rollNo, outlookEmail, phoneNumber, hostel, roomNumber });
+
+    return res.json({ outlookEmail, phoneNumber, hostel, roomNumber , name });
+  } catch (err) {
+    console.error("Lookup error:", err);
+    res.status(500).send("Internal lookup error");
+  }
+});
+
 
 khokhaEntryRouter.post(
   "/newEntry",
@@ -61,47 +143,6 @@ khokhaEntryRouter.get("/entries/new", (req, res) => {
   res.render("add-entry", { BASE_URL: req.app.locals.BASE_URL });
 });
 
-// New lookup endpoint (dummy data for now)
-khokhaEntryRouter.post("/entries/lookup", async (req, res) => {
-  try {
-    const { name, rollNumber } = req.body || {};
-    if (!name || !rollNumber) {
-      return res.status(400).send("Missing name or rollNumber");
-    }
-
-    // --- Real API fetch  ---
-    /*
-    const externalUrl = process.env.SWC_LOOKUP_URL;
-    const headers = { 'Content-Type': 'application/json' };
-    if (process.env.SWC_LOOKUP_TOKEN) {
-      headers.Authorization = `Bearer ${process.env.SWC_LOOKUP_TOKEN}`;
-    }
-    const upstream = await fetch(externalUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ name, rollNumber })
-    });
-    if (!upstream.ok) {
-      const t = await upstream.text();
-      return res.status(upstream.status).send(t || 'External lookup failed');
-    }
-    const data = await upstream.json();
-    */
-
-    // --- Hardcoded dummy data---
-    const data = {
-      outlookEmail: `${name.toLowerCase().replace(/\s+/g, '')}@iitg.ac.in`,
-      phoneNumber: "9999999999",
-      hostel: "KAMENG",
-      roomNumber: "B2-201"
-    };
-
-    return res.json(data);
-  } catch (err) {
-    console.error("Lookup error:", err);
-    res.status(500).send("Internal lookup error");
-  }
-});
 
 // Save new entry to DB
 khokhaEntryRouter.post("/entries", async (req, res, next) => {
@@ -267,5 +308,85 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
     res.status(500).send("Export failed.");
   }
 });
+
+
+// Build Mongo query from form body
+function buildFilter(body) {
+  const {
+    dateField = "createdAt",
+    from,
+    to,
+    name,
+    rollNumber,
+    hostel,
+    roomNumber,
+    destination,
+    checkOutGate,
+    checkInGate,
+    isClosed,
+  } = body || {};
+
+  const q = {};
+
+  // Date range
+  if (from || to) {
+    const range = {};
+    if (from) range.$gte = new Date(from);
+    if (to)   range.$lte = new Date(to);
+    q[dateField] = range;
+  }
+
+  // Text / exact filters
+  if (name)       q.name = { $regex: name, $options: "i" };      // contains
+  if (destination)q.destination = { $regex: destination, $options: "i" };
+  if (rollNumber) q.rollNumber = rollNumber;                      // exact
+  if (roomNumber) q.roomNumber = roomNumber;                      // exact
+  if (hostel)     q.hostel = hostel;                              // exact
+  if (checkOutGate) q.checkOutGate = checkOutGate;                // exact
+  if (checkInGate)  q.checkInGate  = checkInGate;                 // exact
+
+  // Status
+  if (isClosed === "true")  q.isClosed = true;
+  if (isClosed === "false") q.isClosed = false;
+
+  return { q, dateField };
+}
+
+khokhaEntryRouter.post("/entries/export/preview", async (req, res) => {
+  try {
+    const { q, dateField } = buildFilter(req.body);
+    const page  = Math.max(parseInt(req.body.page || "1", 10), 1);
+    const limit = Math.min(Math.max(parseInt(req.body.limit || "25", 10), 1), 200);
+    const skip  = (page - 1) * limit;
+
+    const [total, results] = await Promise.all([
+      KhokhaEntryModel.countDocuments(q),
+      KhokhaEntryModel.find(q)
+        .sort({ [dateField]: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .select({
+          name: 1, rollNumber: 1, outlookEmail: 1, phoneNumber: 1,
+          hostel: 1, roomNumber: 1, destination: 1,
+          checkOutTime: 1, checkOutGate: 1,
+          checkInTime: 1, checkInGate: 1,
+          isClosed: 1, createdAt: 1,
+        }),
+    ]);
+
+    res.json({ total, page, limit, results });
+  } catch (err) {
+    console.error("Preview error:", err);
+    res.status(500).json({ error: "Failed to preview entries" });
+  }
+});
+
+
+
+
+
+
+
 
 export default khokhaEntryRouter;
