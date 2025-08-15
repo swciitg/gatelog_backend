@@ -7,163 +7,324 @@
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
   <style>
-    body { background:#ececec; }
-    .container { max-width: 900px; background:#fff; margin-top: 30px; padding: 24px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,.1); }
-    .form-section { padding:16px; border:1px solid #e5e7eb; border-radius:10px; background:#fafafa; }
-    .readonly { background:#f3f4f6; }
+    body { background:#f4f6f8; }
+    .wrapper { max-width: 980px; margin: 40px auto; }
+    .card-elev { border: 0; border-radius: 16px; box-shadow: 0 10px 24px rgba(20,20,20,.08); }
+    .section { background:#fff; border-radius: 14px; border:1px solid #e9ecef; padding: 18px; }
+    .readonly { background:#f8f9fa; }
+    .gate-group .form-check { margin-right: 14px; }
+    .label-muted { font-size: .85rem; color:#6c757d; }
+    .header-grad { background: linear-gradient(135deg,#1e88e5 0%,#6f42c1 100%); color: #fff; border-radius: 16px; }
+    .header-grad .btn { color:#fff; border-color: rgba(255,255,255,.6); }
+    .mini-badge { background:#eef2ff; color:#4338ca; border-radius: 999px; padding: 4px 10px; font-size: .8rem; }
+    .profile-pill { background:#f1f5f9; border-radius: 999px; padding: 8px 12px; }
   </style>
 </head>
 <body>
-<div class="container">
-  <div class="d-flex justify-content-between align-items-center mb-3">
-    <h2 class="m-0">Add Khokha Entry</h2>
-    <a class="btn btn-outline-secondary" href="<%= BASE_URL %>">← Back</a>
-  </div>
-
-  <div id="alertBox" class="alert d-none" role="alert"></div>
-
-  <!-- Lookup section -->
-  <div class="form-section mb-3">
-    <div class="row g-3 align-items-end">
-      <div class="col-md-6">
-        <label class="form-label">Name</label>
-        <input id="name" type="text" class="form-control" placeholder="Full name" required>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Roll Number</label>
-        <input id="rollNumber" type="text" class="form-control" placeholder="123456" required>
-      </div>
-      <div class="col-12">
-        <button id="fetchBtn" class="btn btn-primary">Fetch Details</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Form -->
-  <form id="entryForm" method="POST" action="<%= BASE_URL %>/entries">
-    <input type="hidden" name="name" id="f_name">
-    <input type="hidden" name="rollNumber" id="f_rollNumber">
-
-    <div class="row g-3">
-      <div class="col-md-6">
-        <label class="form-label">Outlook Email</label>
-        <input name="outlookEmail" id="outlookEmail" type="email" class="form-control readonly" readonly required>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Phone Number</label>
-        <input name="phoneNumber" id="phoneNumber" type="tel" class="form-control readonly" readonly required>
+  <div class="wrapper">
+    <div class="card card-elev">
+      <div class="card-header header-grad d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="m-0">Add Khokha Entry</h3>
+          <div class="mini-badge mt-2">Gate Log • Secure Lookup</div>
+        </div>
+        <a class="btn btn-outline-light" href="<%= BASE_URL %>">← Back</a>
       </div>
 
-      <div class="col-md-6">
-        <label class="form-label">Hostel</label>
-        <input name="hostel" id="hostel" type="text" class="form-control readonly" readonly required>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Room Number</label>
-        <input name="roomNumber" id="roomNumber" type="text" class="form-control readonly" readonly required>
-      </div>
+      <div class="card-body">
+        <div id="alertBox" class="alert d-none" role="alert"></div>
 
-      <div class="col-12">
-        <label class="form-label">Destination</label>
-        <input name="destination" id="destination" type="text" class="form-control" placeholder="City/Location" required>
-      </div>
+        <!-- Lookup -->
+        <div class="section mb-3">
+          <div class="row g-3 align-items-end">
+            <div class="col-md-6">
+              <label class="form-label">Roll Number</label>
+              <input id="rollNumber" type="text" class="form-control" placeholder="e.g:230102013" required>
+              <div class="form-text">Enter the student roll number and fetch details.</div>
+            </div>
+            <div class="col-md-6 d-flex gap-2">
+              <button id="fetchBtn" class="btn btn-primary">
+                <span class="spinner-border spinner-border-sm me-2 d-none" id="fetchSpin"></span>
+                Fetch Details
+              </button>
+              <button id="proceedBtn" class="btn btn-success" type="button" disabled data-bs-toggle="modal" data-bs-target="#detailsModal">
+                Proceed
+              </button>
+              <button id="resetBtn" class="btn btn-outline-secondary" type="button">
+                Reset All
+              </button>
+            </div>
+          </div>
+        </div>
 
-      <div class="col-md-6">
-        <label class="form-label">Check-Out Time</label>
-        <input name="checkOutTime" id="checkOutTime" type="datetime-local" class="form-control" required>
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Exit Gate</label>
-        <select name="checkOutGate" id="checkOutGate" class="form-select" required>
-          <option value="">Select...</option>
-          <option value="Main_Gate">Main_Gate</option>
-          <option value="KV_Gate">KV_Gate</option>
-          <option value="Khoka_Gate">Khoka_Gate</option>
-        </select>
-      </div>
+        <!-- Profile preview -->
+        <div class="section mb-3">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label">Name</label>
+              <input id="name" type="text" class="form-control readonly" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Outlook Email</label>
+              <input id="outlookEmail" type="email" class="form-control readonly" readonly>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label">Phone Number</label>
+              <input id="phoneNumber" type="tel" class="form-control readonly" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Hostel</label>
+              <input id="hostel" type="text" class="form-control readonly" readonly>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label">Room Number</label>
+              <input id="roomNumber" type="text" class="form-control readonly" readonly>
+            </div>
+          </div>
+        </div>
 
-      <div class="col-md-6">
-        <label class="form-label">Check-In Time (optional)</label>
-        <input name="checkInTime" id="checkInTime" type="datetime-local" class="form-control">
-      </div>
-      <div class="col-md-6">
-        <label class="form-label">Check-In Gate (optional)</label>
-        <select name="checkInGate" id="checkInGate" class="form-select">
-          <option value="">Select...</option>
-          <option value="Main_Gate">Main_Gate</option>
-          <option value="KV_Gate">KV_Gate</option>
-          <option value="Khoka_Gate">Khoka_Gate</option>
-          <option value="AUTO_CLOSED">AUTO_CLOSED</option>
-        </select>
-      </div>
+        <!-- Hidden submit form -->
+        <form id="entryForm" method="POST" action="<%= BASE_URL %>/entries" class="d-none">
+          <input type="hidden" name="name" id="f_name">
+          <input type="hidden" name="rollNumber" id="f_rollNumber">
+          <input type="hidden" name="outlookEmail" id="f_outlookEmail">
+          <input type="hidden" name="phoneNumber" id="f_phoneNumber">
+          <input type="hidden" name="hostel" id="f_hostel">
+          <input type="hidden" name="roomNumber" id="f_roomNumber">
+          <input type="hidden" name="destination" id="f_destination">
+          <input type="hidden" name="checkOutTime" id="f_checkOutTime">
+          <input type="hidden" name="checkOutGate" id="f_checkOutGate">
+          <input type="hidden" name="checkInTime" id="f_checkInTime">
+          <input type="hidden" name="checkInGate" id="f_checkInGate">
+          <input type="hidden" name="isClosed" id="f_isClosed">
+        </form>
 
-      <div class="col-12">
-        <div class="form-check">
-          <input name="isClosed" id="isClosed" class="form-check-input" type="checkbox" value="true">
-          <label class="form-check-label" for="isClosed">Mark as Closed</label>
+        <!-- Hint -->
+        <div class="text-muted label-muted mt-2">
+          After fetching details, click <span class="profile-pill">Proceed</span> to complete the entry.
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="mt-4 d-flex gap-2">
-      <button type="submit" class="btn btn-success">Save Entry</button>
-      <button type="reset" class="btn btn-outline-secondary">Reset</button>
+  <!-- Modal -->
+  <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <div>
+            <h5 id="detailsModalLabel" class="modal-title">Complete Entry</h5>
+            <div class="text-muted small" id="modalSummary"></div>
+          </div>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label">Destination</label>
+              <input id="m_destination" type="text" class="form-control" placeholder="City/Location" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Check-Out Time</label>
+              <input id="m_checkOutTime" type="datetime-local" class="form-control" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label d-block">Exit Gate</label>
+              <div class="gate-group d-flex flex-wrap">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="m_checkOutGate" id="m_cg_main" value="Main_Gate" required>
+                  <label class="form-check-label" for="m_cg_main">Main_Gate</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="m_checkOutGate" id="m_cg_kv" value="KV_Gate" required>
+                  <label class="form-check-label" for="m_cg_kv">KV_Gate</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="m_checkOutGate" id="m_cg_khoka" value="Khoka_Gate" required>
+                  <label class="form-check-label" for="m_cg_khoka">Khoka_Gate</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Check-In Time (optional)</label>
+              <input id="m_checkInTime" type="datetime-local" class="form-control">
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label d-block">Check-In Gate (optional)</label>
+              <div class="gate-group d-flex flex-wrap">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="m_checkInGate" id="m_ig_main" value="Main_Gate">
+                  <label class="form-check-label" for="m_ig_main">Main_Gate</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="m_checkInGate" id="m_ig_kv" value="KV_Gate">
+                  <label class="form-check-label" for="m_ig_kv">KV_Gate</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="m_checkInGate" id="m_ig_khoka" value="Khoka_Gate">
+                  <label class="form-check-label" for="m_ig_khoka">Khoka_Gate</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="m_checkInGate" id="m_ig_auto" value="AUTO_CLOSED">
+                  <label class="form-check-label" for="m_ig_auto">AUTO_CLOSED</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <div class="form-check">
+                <input id="m_isClosed" class="form-check-input" type="checkbox" value="true">
+                <label class="form-check-label" for="m_isClosed">Mark as Closed</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-outline-secondary" data-bs-dismiss="modal" type="button">Cancel</button>
+          <button id="modalSubmitBtn" class="btn btn-success" type="button">Save Entry</button>
+        </div>
+      </div>
     </div>
-  </form>
-</div>
+  </div>
 
-<script>
-  const BASE_URL = '<%= BASE_URL %>';
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const BASE_URL = '<%= BASE_URL %>';
 
-  const alertBox = document.getElementById('alertBox');
-  function showAlert(type, msg) {
-    alertBox.className = 'alert alert-' + type;
-    alertBox.textContent = msg;
-    alertBox.classList.remove('d-none');
-  }
+    const alertBox = document.getElementById('alertBox');
+    function showAlert(type, msg) {
+      alertBox.className = 'alert alert-' + type;
+      alertBox.textContent = msg;
+      alertBox.classList.remove('d-none');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    function hideAlert(){ alertBox.classList.add('d-none'); }
 
-  document.getElementById('fetchBtn').addEventListener('click', async (e) => {
-    e.preventDefault();
-    alertBox.classList.add('d-none');
-
-    const name = document.getElementById('name').value.trim();
-    const roll = document.getElementById('rollNumber').value.trim();
-
-    if (!name || !roll) {
-      showAlert('warning', 'Please enter Name and Roll Number first.');
-      return;
+    function setNowLocal(el) {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      el.value = now.toISOString().slice(0,16);
     }
 
-    document.getElementById('f_name').value = name;
-    document.getElementById('f_rollNumber').value = roll;
+    // Prefill when modal opens and show summary
+    const detailsModalEl = document.getElementById('detailsModal');
+    detailsModalEl.addEventListener('show.bs.modal', () => {
+      setNowLocal(document.getElementById('m_checkOutTime'));
+      const n = document.getElementById('name').value || '—';
+      const r = document.getElementById('rollNumber').value || '—';
+      const e = document.getElementById('outlookEmail').value || '—';
+      document.getElementById('modalSummary').textContent = `Submitting for ${n} (${r}) • ${e}`;
+      document.getElementById('m_destination').focus();
+    });
 
-    try {
-      const res = await fetch(`${BASE_URL}/entries/lookup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, rollNumber: roll })
+    // Reset All
+    function resetAll() {
+      hideAlert();
+      // inputs
+      document.getElementById('rollNumber').value = '';
+      ['name','outlookEmail','phoneNumber','hostel','roomNumber'].forEach(id => {
+        document.getElementById(id).value = '';
       });
+      // hidden form
+      ['f_name','f_rollNumber','f_outlookEmail','f_phoneNumber','f_hostel','f_roomNumber',
+       'f_destination','f_checkOutTime','f_checkOutGate','f_checkInTime','f_checkInGate','f_isClosed'
+      ].forEach(id => document.getElementById(id).value = '');
+      // modal fields
+      document.getElementById('m_destination').value = '';
+      document.getElementById('m_checkOutTime').value = '';
+      document.getElementById('m_checkInTime').value = '';
+      document.getElementById('m_isClosed').checked = false;
+      document.querySelectorAll('input[name="m_checkOutGate"]').forEach(n => n.checked = false);
+      document.querySelectorAll('input[name="m_checkInGate"]').forEach(n => n.checked = false);
+      // disable proceed
+      document.getElementById('proceedBtn').disabled = true;
+    }
 
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || 'Lookup failed');
+    document.getElementById('resetBtn').addEventListener('click', resetAll);
+
+    // FETCH DETAILS
+    document.getElementById('fetchBtn').addEventListener('click', async (e) => {
+      e.preventDefault();
+      hideAlert();
+
+      const roll = document.getElementById('rollNumber').value.trim();
+      if (!roll) {
+        showAlert('warning', 'Please enter Roll Number first.');
+        return;
       }
 
-      const data = await res.json();
-      document.getElementById('outlookEmail').value = data.outlookEmail || '';
-      document.getElementById('phoneNumber').value = data.phoneNumber || '';
-      document.getElementById('hostel').value = data.hostel || '';
-      document.getElementById('roomNumber').value = data.roomNumber || '';
+      const btn = document.getElementById('fetchBtn');
+      const spin = document.getElementById('fetchSpin');
+      btn.disabled = true; spin.classList.remove('d-none');
 
-      showAlert('success', 'Details fetched successfully.');
-    } catch (err) {
-      showAlert('danger', `Failed to fetch details: ${err.message}`);
-    }
-  });
+      try {
+        const res = await fetch(`${BASE_URL}/entries/lookup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rollNumber: roll })
+        });
 
-  const now = new Date();
-  now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  document.getElementById('checkOutTime').value = now.toISOString().slice(0,16);
-</script>
+        if (!res.ok) {
+          const t = await res.text();
+          throw new Error(t || 'Lookup failed');
+        }
+
+        const data = await res.json();
+
+        // Fill readonly
+        document.getElementById('name').value = data.name || '';
+        document.getElementById('outlookEmail').value = data.outlookEmail || '';
+        document.getElementById('phoneNumber').value = data.phoneNumber || '';
+        document.getElementById('hostel').value = data.hostel || '';
+        document.getElementById('roomNumber').value = data.roomNumber || '';
+
+        // Hidden form
+        document.getElementById('f_name').value = data.name || '';
+        document.getElementById('f_rollNumber').value = roll;
+        document.getElementById('f_outlookEmail').value = data.outlookEmail || '';
+        document.getElementById('f_phoneNumber').value = data.phoneNumber || '';
+        document.getElementById('f_hostel').value = data.hostel || '';
+        document.getElementById('f_roomNumber').value = data.roomNumber || '';
+
+        document.getElementById('proceedBtn').disabled = false;
+        showAlert('success', 'Details fetched successfully.');
+      } catch (err) {
+        document.getElementById('proceedBtn').disabled = true;
+        showAlert('danger', `Failed to fetch details: ${err.message}`);
+      } finally {
+        btn.disabled = false; spin.classList.add('d-none');
+      }
+    });
+
+    // SUBMIT from modal
+    document.getElementById('modalSubmitBtn').addEventListener('click', () => {
+      const dest = document.getElementById('m_destination').value.trim();
+      const cout = document.getElementById('m_checkOutTime').value;
+      const cg = document.querySelector('input[name="m_checkOutGate"]:checked');
+
+      if (!dest) return showAlert('warning', 'Destination is required.');
+      if (!cout) return showAlert('warning', 'Check-Out Time is required.');
+      if (!cg)   return showAlert('warning', 'Please select an Exit Gate.');
+
+      document.getElementById('f_destination').value = dest;
+      document.getElementById('f_checkOutTime').value = cout;
+      document.getElementById('f_checkOutGate').value = cg.value;
+
+      const cin = document.getElementById('m_checkInTime').value || '';
+      const igNode = document.querySelector('input[name="m_checkInGate"]:checked');
+      const ig = igNode ? igNode.value : '';
+      document.getElementById('f_checkInTime').value = cin;
+      document.getElementById('f_checkInGate').value = ig;
+      document.getElementById('f_isClosed').value = document.getElementById('m_isClosed').checked ? 'true' : 'false';
+
+      document.getElementById('entryForm').submit();
+    });
+  </script>
 </body>
 </html>
