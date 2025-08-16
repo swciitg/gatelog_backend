@@ -3,297 +3,352 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-   <title>All Khokha Entries</title>
-   <!-- for jquery -->
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<!-- for datatable func-->
-<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script> 
-<!-- DataTables CSS -->
+  <title>All Khokha Entries</title>
+
+  <!-- jQuery & DataTables -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script> 
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
   <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
+
+  <!-- Bootstrap -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- SheetJS (for client-side Excel/CSV export) -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
   <style>
-    
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #ececec;
-      color: #090909;
-      margin: 0;
-      padding: 20px;
-       box-shadow: inset 0 0 50px #787676;
-    }
-
-  
-    .logout-link {
-      position:absolute;
-      top: 30px;
-      right: 80px;
-      color: #20363d;
-      text-decoration: none;
-      font-weight: bold;
-      transition: color 0.3s ease;
-    }
-
-    .logout-link:hover {
-     color: #78878d;
-    }
-
- 
-    .container {
-      background-color:#ececec;
-      padding: 40px;
-      border-radius: 12px;
-      box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
-      max-width: 95%;
-      margin: auto;
-      font-size: 1.1rem;
-    }
-
-    h1 {
-      color: #121213;
-      text-align: center;
-      margin-bottom: 30px;
-      font-weight: 500;
-    font-size: 3rem;
-    }
-
-
-
-   .dataTables_length{
-     padding-bottom: 20px;
-   }
-   
-     .dataTables_length select {
-       background-color: #1b1b1b;  
-       color: #090909;       
-       padding: 4px 8px;
-   }
-   .dataTables_length select option {
-       background-color: #ececec;
-       color: #090909;
-   }
-   .dataTables_paginate .paginate_button {
-       color: #090909 !important;
-       border: 1px solid #333 !important;
-       border-radius: 5px;
-       margin: 2px;
-   }
-   
-   
-   ::-webkit-scrollbar {
-       height: 10px;
-   }
-   
-   ::-webkit-scrollbar-track {
-       background: #d6d0d0;
-   }
-   
-   ::-webkit-scrollbar-thumb {
-       background: #5c6976; 
-       border-radius: 10px;
-   }
-   
-   ::-webkit-scrollbar-thumb:hover {
-       background: #888;
-   }
-
-
-   div.dataTables_scroll {
-    border-radius: 6px; 
-    overflow-x: auto;
-    border: 1px solid #444 !important;
-   }
-
-    table.dataTable thead {
-    background-color: #334a61; 
-    color: #f4f7f9d7;
-    border-radius: 15px 15px 0 0;
-   }
-
-    table.dataTable thead th,
-    table.dataTable tbody td {
-        text-align: center;
-        vertical-align: middle;
-        padding: 12px 25px; 
-   }
-
-
-    #entriesTable tbody tr {
-      cursor: default;
-    }
-  
-    #entriesTable tbody tr:hover {
-      background-color: rgba(128, 206, 241, 0.1) !important;
-      cursor: pointer;
-    }
-    
-
-    @media (max-width: 600px) {
-      .container {
-        padding: 15px;
-      }
-      h1{
-        font-size: 2rem;
-        font-weight: 300;
-      }
-    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ececec; color: #090909; margin: 0; padding: 20px; box-shadow: inset 0 0 50px #787676; }
+    .logout-link { position: absolute; top: 30px; right: 80px; color: #20363d; text-decoration: none; font-weight: bold; transition: color 0.3s ease; }
+    .logout-link:hover { color: #78878d; }
+    .container { background-color:#ececec; padding: 40px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.5); max-width: 95%; margin: auto; font-size: 1.1rem; }
+    h1 { color: #121213; text-align: center; margin-bottom: 30px; font-weight: 500; font-size: 3rem; }
+    .dataTables_length{ padding-bottom: 20px; }
+    .dataTables_length select { background-color: #1b1b1b; color: #090909; padding: 4px 8px; }
+    .dataTables_length select option { background-color: #ececec; color: #090909; }
+    .dataTables_paginate .paginate_button { color: #090909 !important; border: 1px solid #333 !important; border-radius: 5px; margin: 2px; }
+    ::-webkit-scrollbar { height: 10px; }
+    ::-webkit-scrollbar-track { background: #d6d0d0; }
+    ::-webkit-scrollbar-thumb { background: #5c6976; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #888; }
+    div.dataTables_scroll { border-radius: 6px; overflow-x: auto; border: 1px solid #444 !important; }
+    table.dataTable thead { background-color: #334a61; color: #f4f7f9d7; border-radius: 15px 15px 0 0; }
+    table.dataTable thead th, table.dataTable tbody td { text-align: center; vertical-align: middle; padding: 12px 25px; }
+    #entriesTable tbody tr { cursor: default; }
+    #entriesTable tbody tr:hover { background-color: rgba(128,206,241,0.1) !important; cursor: pointer; }
+    @media (max-width: 600px) { .container { padding: 15px; } h1{ font-size: 2rem; font-weight: 300; } }
   </style>
 </head>
+
 <body>
-   
-    
   <div class="container">
-
     <h1 id="welcomemsg"></h1>
-    <a href="<%=process.env.BASE_URL%>/v1/admin/logout" class="logout-link">Logout</a>
+    <a href="<%= process.env.BASE_URL %>/v1/admin/logout" class="logout-link">Logout</a>
 
-  <h1 >All Khokha Entries</h1>
-<div class="d-flex justify-content-end mb-3 gap-2">
-  <a class="btn btn-primary" href="<%= BASE_URL %>/entries/new">+ Add New Entry</a>
-  <a class="btn btn-outline-success" href="<%= BASE_URL %>/entries/export">⬇ Export Data</a>
-</div>
+    <h1>All Khokha Entries</h1>
 
-  
+    <div class="d-flex flex-wrap justify-content-end mb-3 gap-2">
+      <a class="btn btn-primary" href="<%= BASE_URL %>/entries/new">+ Add New Entry</a>
+      <!-- Keep existing server export if you want -->
+      <!-- <a class="btn btn-outline-success" href="<%= BASE_URL %>/entries/export">⬇ Server Export</a> -->
+      <!-- New client-side export buttons -->
+      <button id="btn-export-xlsx" class="btn btn-success">⬇ Export Excel</button>
+      <button id="btn-export-csv" class="btn btn-outline-secondary">⬇ Export CSV</button>
+    </div>
+
+    <!-- FILTER TOOLBAR -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-end">
+        <!-- Row 1: text filters -->
+        <div class="col-md-2">
+          <label class="form-label">Name</label>
+          <input id="f-name" class="form-control" placeholder="e.g. Arunika" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Roll No</label>
+          <input id="f-roll" class="form-control" placeholder="e.g. 2301..." />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Outlook</label>
+          <input id="f-outlook" class="form-control" placeholder="abc@iitg.ac.in" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Phone</label>
+          <input id="f-phone" class="form-control" placeholder="10 digits" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Room</label>
+          <input id="f-room" class="form-control" placeholder="e.g. CT-28" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Destination</label>
+          <input id="f-dest" class="form-control" placeholder="e.g. City" />
+        </div>
+
+        <!-- Row 2: selects -->
+        <div class="col-md-2">
+          <label class="form-label">Hostel</label>
+          <select id="f-hostel" class="form-select">
+            <option value="">All</option>
+            <option>LOHIT</option><option>BRAHMAPUTRA</option><option>DISANG</option>
+            <option>KAMENG</option><option>BARAK</option><option>MANAS</option>
+            <option>DIHING</option><option>UMIAM</option><option>SIANG</option>
+            <option>KAPILI</option><option>DHANSIRI</option><option>SUBANSIRI</option>
+            <option>MSH</option><option>GAURANG</option><option>DIBANG</option>
+            <option>NON-HOSTELLER</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Status</label>
+          <select id="f-status" class="form-select">
+            <option value="">All</option>
+            <option>Open</option>
+            <option>Closed</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Out Gate</label>
+          <select id="f-outgate" class="form-select">
+            <option value="">All</option>
+            <option>Main_Gate</option>
+            <option>KV_Gate</option>
+            <option>Khoka_Gate</option>
+            <option>AUTO_CLOSED</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">In Gate</label>
+          <select id="f-ingate" class="form-select">
+            <option value="">All</option>
+            <option>Main_Gate</option>
+            <option>KV_Gate</option>
+            <option>Khoka_Gate</option>
+            <option>AUTO_CLOSED</option>
+            <option>—</option>
+          </select>
+        </div>
+
+        <!-- Row 3: date ranges -->
+        <div class="col-md-2">
+          <label class="form-label">Check-Out from</label>
+          <input id="f-co-from" type="datetime-local" class="form-control" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Check-Out to</label>
+          <input id="f-co-to" type="datetime-local" class="form-control" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Check-In from</label>
+          <input id="f-ci-from" type="datetime-local" class="form-control" />
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Check-In to</label>
+          <input id="f-ci-to" type="datetime-local" class="form-control" />
+        </div>
+
+        <!-- Row 4: reset -->
+        <div class="col-md-2">
+          <button id="f-reset" class="btn btn-outline-secondary w-100">Reset Filters</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
     <table id="entriesTable" class="display nowrap" style="width:100%">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Roll No</th>
-        <th>Outlook</th>
-        <th>Phone</th>
-        <th>Hostel</th>
-        <th>Room</th>
-        <th>Destination</th>
-        <th>Status</th>
-        <th>Gate</th>
-        <th>Check-Out</th>
-        <th>Check-In</th>
-        </tr>
-    </thead>
-    <tbody>
-      <% entries.forEach(entry => { %>
+      <thead>
         <tr>
-          <td><%= entry.name %></td>
-          <td><%= entry.rollNumber %></td>
-          <td><%= entry.outlookEmail %></td>
-          <td><%= entry.phoneNumber %></td>
-          <td><%= entry.hostel %></td>
-          <td><%= entry.roomNumber %></td>
-          <td><%= entry.destination %></td>
-          <td><%= entry.isClosed ? "Closed" : "Open" %></td>
-          <td>
-             <div><strong>Out:</strong> <%= entry.checkOutGate %></div>
-             <div><strong>In:</strong> <%= entry.checkInGate %></div>
-          </td>
-          <td><%= entry.checkOutTime.toLocaleString() %></td>
-          <td><%= entry.checkInTime ? entry.checkInTime.toLocaleString() : "—" %></td>
+          <th>Name</th>            <!-- 0 -->
+          <th>Roll No</th>         <!-- 1 -->
+          <th>Outlook</th>         <!-- 2 -->
+          <th>Phone</th>           <!-- 3 -->
+          <th>Hostel</th>          <!-- 4 -->
+          <th>Room</th>            <!-- 5 -->
+          <th>Destination</th>     <!-- 6 -->
+          <th>Status</th>          <!-- 7 -->
+          <th>Gate</th>            <!-- 8 (combined out/in) -->
+          <th>Check-Out</th>       <!-- 9 (display) -->
+          <th>Check-In</th>        <!-- 10 (display) -->
+          <!-- hidden technical columns for filtering -->
+          <th>_OutGate</th>        <!-- 11 (hidden exact) -->
+          <th>_InGate</th>         <!-- 12 (hidden exact) -->
+          <th>_CheckOutISO</th>    <!-- 13 (hidden ISO) -->
+          <th>_CheckInISO</th>     <!-- 14 (hidden ISO) -->
         </tr>
-      <% }) %>
-    </tbody>
-  </table>
+      </thead>
+      <tbody>
+        <% entries.forEach(entry => { %>
+          <tr>
+            <td><%= entry.name %></td>
+            <td><%= entry.rollNumber %></td>
+            <td><%= entry.outlookEmail %></td>
+            <td><%= entry.phoneNumber %></td>
+            <td><%= entry.hostel %></td>
+            <td><%= entry.roomNumber %></td>
+            <td><%= entry.destination %></td>
+            <td><%= entry.isClosed ? "Closed" : "Open" %></td>
+            <td>
+              <div><strong>Out:</strong> <%= entry.checkOutGate %></div>
+              <div><strong>In:</strong> <%= entry.checkInGate || "—" %></div>
+            </td>
+            <td><%= entry.checkOutTime.toLocaleString() %></td>
+            <td><%= entry.checkInTime ? entry.checkInTime.toLocaleString() : "—" %></td>
+            <!-- hidden technical columns -->
+            <td><%= entry.checkOutGate %></td>
+            <td><%= entry.checkInGate || "—" %></td>
+            <td><%= entry.checkOutTime.toISOString() %></td>
+            <td><%= entry.checkInTime ? entry.checkInTime.toISOString() : "" %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
   </div>
 
-
-<!-- when clicked the whole box of entry details of that user is shown -->
-<div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="detailsModalLabel">Entry Details</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body" id="modalContent">
-        <!-- entry details added here dynamically -->
+  <!-- DETAILS MODAL -->
+  <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detailsModalLabel">Entry Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="modalContent"></div>
       </div>
     </div>
   </div>
-</div>
 
+  <!-- WELCOME TYPER -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const userEmail = "<%= user %>";
+      const text = `Welcome, ${userEmail}!`;
+      const element = document.getElementById("welcomemsg");
+      let index = 0;
+      (function typeNextChar() {
+        if (index < text.length) { element.textContent += text.charAt(index++); setTimeout(typeNextChar, 80); }
+      })();
+    });
+  </script>
 
+  <!-- DATATABLE + FILTER LOGIC + LIVE POLL + EXPORT -->
+  <script>
+    // custom date-range filter using hidden ISO columns
+    $.fn.dataTable.ext.search.push(function(settings, data) {
+      const idxCO = 13; // _CheckOutISO
+      const idxCI = 14; // _CheckInISO
+      const coISO = data[idxCO] || "";
+      const ciISO = data[idxCI] || "";
+      const coFrom = document.getElementById('f-co-from').value;
+      const coTo   = document.getElementById('f-co-to').value;
+      const ciFrom = document.getElementById('f-ci-from').value;
+      const ciTo   = document.getElementById('f-ci-to').value;
 
+      const inRange = (iso, fromVal, toVal) => {
+        if (!iso) return !(fromVal || toVal); // if no date, only pass when no bound is set
+        const t = new Date(iso).getTime();
+        if (fromVal && t < new Date(fromVal).getTime()) return false;
+        if (toVal   && t > new Date(toVal).getTime())   return false;
+        return true;
+      };
+      const coOk = (!coFrom && !coTo) ? true : inRange(coISO, coFrom, coTo);
+      const ciOk = (!ciFrom && !ciTo) ? true : inRange(ciISO, ciFrom, ciTo);
+      return coOk && ciOk;
+    });
 
-<!-- for mobile functionality-->
-<script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+    let table;
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const userEmail = "<%= user %>";
-    const text = `Welcome, ${userEmail}!`;
-    const element = document.getElementById("welcomemsg");
-    let index = 0;
-
-    function typeNextChar() {
-      if (index < text.length) {
-        element.textContent += text.charAt(index);
-        index++;
-        setTimeout(typeNextChar, 80);
-      }
-    }
-
-    typeNextChar();
-  });
-</script>
-
-<script>
-$(document).ready(function () {
-  
-  
-    const table = $('#entriesTable').DataTable({
+    $(document).ready(function () {
+      table = $('#entriesTable').DataTable({
         scrollX: true,
         paging: true,
-        searching: false,
+        searching: true,
         ordering: true,
         pageLength: 25,
         lengthMenu: [10, 25, 50, 100],
-        order: [[9, 'desc']] 
-       
-        
-  });
+        order: [[9, 'desc']], // Check-Out desc
+        columnDefs: [
+          { targets: [11,12,13,14], visible: false, searchable: true }, // hidden technical columns
+          { targets: [8,9,10], searchable: false }
+        ]
+      });
 
-let lastFetchedTime = new Date().toISOString(); 
+      const escapeRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    setInterval(function () {
-        $.ajax({
-            url: "/khokha/entries/api?since=" + lastFetchedTime,
-            method: "GET",
-            success: function (newEntries) {
-                if (newEntries.length > 0) {
-                    newEntries.forEach(entry => {
-                        const newRow = [
-                            entry.name,
-                            entry.rollNumber,
-                            entry.outlookEmail,
-                            entry.phoneNumber,
-                            entry.hostel,
-                            entry.roomNumber,
-                            entry.destination,
-                            entry.isClosed ? "Closed" : "Open",
-                            `<div><strong>Out:</strong> ${entry.checkOutGate}<br><strong>In:</strong> ${entry.checkInGate}</div>`,
-                            new Date(entry.checkOutTime).toLocaleString(),
-                            entry.checkInTime ? new Date(entry.checkInTime).toLocaleString() : "—"
-                        ];
+      const bindText = (selector, colIdx) => {
+        $(selector).on('input', function(){ table.column(colIdx).search(this.value).draw(); });
+      };
+      bindText('#f-name', 0);
+      bindText('#f-roll', 1);
+      bindText('#f-outlook', 2);
+      bindText('#f-phone', 3);
+      bindText('#f-room', 5);
+      bindText('#f-dest', 6);
 
-                        table.row.add(newRow).draw(false);
-                    });
-
-                    lastFetchedTime = new Date().toISOString(); // updating the last time the data added
-                }
-            },
-            error: function (err) {
-                console.error("Error fetching new entries:", err);
-            }
+      const bindSelectExact = (selector, colIdx) => {
+        $(selector).on('change', function(){
+          const v = this.value;
+          if (!v) table.column(colIdx).search('').draw();
+          else table.column(colIdx).search('^' + escapeRegex(v) + '$', true, false).draw();
         });
-    }, 15000);
-  
-    // to Handle click event
-$('#entriesTable tbody').on('click', 'tr', function () {
-        const rowData = table.row(this).data();
+      };
+      bindSelectExact('#f-hostel', 4);
+      bindSelectExact('#f-status', 7);
+      bindSelectExact('#f-outgate', 11);
+      bindSelectExact('#f-ingate', 12);
 
-        //dynamically adds the entry details
-        const details = 
-        `
+      $('#f-co-from,#f-co-to,#f-ci-from,#f-ci-to').on('change', function(){ table.draw(); });
+
+      $('#f-reset').on('click', function(){
+        $('#f-name,#f-roll,#f-outlook,#f-phone,#f-room,#f-dest').val('');
+        $('#f-hostel,#f-status,#f-outgate,#f-ingate').val('');
+        $('#f-co-from,#f-co-to,#f-ci-from,#f-ci-to').val('');
+        table.columns().every(function(){ this.search(''); });
+        table.search('');
+        table.draw();
+      });
+
+      // LIVE POLLING — include hidden technical columns for each new row
+      let lastFetchedTime = new Date().toISOString();
+      setInterval(function () {
+        $.ajax({
+          url: "/khokha/entries/api?since=" + encodeURIComponent(lastFetchedTime),
+          method: "GET",
+          success: function (newEntries) {
+            if (Array.isArray(newEntries) && newEntries.length > 0) {
+              newEntries.forEach(entry => {
+                const outGate = entry.checkOutGate || '';
+                const inGate = entry.checkInGate || '—';
+                const coISO = entry.checkOutTime ? new Date(entry.checkOutTime).toISOString() : '';
+                const ciISO = entry.checkInTime ? new Date(entry.checkInTime).toISOString() : '';
+                const newRow = [
+                  entry.name,
+                  entry.rollNumber,
+                  entry.outlookEmail,
+                  entry.phoneNumber,
+                  entry.hostel,
+                  entry.roomNumber,
+                  entry.destination,
+                  entry.isClosed ? "Closed" : "Open",
+                  `<div><strong>Out:</strong> ${outGate}<br><strong>In:</strong> ${inGate}</div>`,
+                  entry.checkOutTime ? new Date(entry.checkOutTime).toLocaleString() : "—",
+                  entry.checkInTime ? new Date(entry.checkInTime).toLocaleString() : "—",
+                  outGate, inGate, coISO, ciISO
+                ];
+                table.row.add(newRow).draw(false);
+              });
+              lastFetchedTime = new Date().toISOString();
+            }
+          },
+          error: function (err) { console.error("Error fetching new entries:", err); }
+        });
+      }, 15000);
+
+      // DETAILS MODAL
+      $('#entriesTable tbody').on('click', 'tr', function () {
+        const rowData = table.row(this).data();
+        if (!rowData) return;
+        const details = `
           <p><strong>Name:</strong> ${rowData[0]}</p>
           <p><strong>Roll No:</strong> ${rowData[1]}</p>
           <p><strong>Outlook:</strong> ${rowData[2]}</p>
@@ -301,17 +356,67 @@ $('#entriesTable tbody').on('click', 'tr', function () {
           <p><strong>Hostel:</strong> ${rowData[4]}</p>
           <p><strong>Room:</strong> ${rowData[5]}</p>
           <p><strong>Destination:</strong> ${rowData[6]}</p>
-          <p><strong>Check-Out:</strong> ${rowData[7]}</p>
+          <p><strong>Status:</strong> ${rowData[7]}</p>
           <p><strong>Gate:</strong> ${rowData[8]}</p>
-          <p><strong>Check-In:</strong> ${rowData[9]}</p>
-          <p><strong>Status:</strong> ${rowData[10]}</p>
-           `;
-
+          <p><strong>Check-Out:</strong> ${rowData[9]}</p>
+          <p><strong>Check-In:</strong> ${rowData[10]}</p>
+        `;
         $('#modalContent').html(details);
         $('#detailsModal').modal('show');
-    });
-});
+      });
 
-</script>
+      // EXPORT BUTTONS
+      function exportVisible(format = 'xlsx') {
+        const dt = table.rows({ search: 'applied' }).data();
+        if (!dt || dt.length === 0) {
+          alert('No rows to export for current view.');
+          return;
+        }
+        const rows = [];
+        for (let i = 0; i < dt.length; i++) {
+          const r = dt[i];
+          rows.push({
+            Name: r[0],
+            RollNumber: r[1],
+            OutlookEmail: r[2],
+            PhoneNumber: r[3],
+            Hostel: r[4],
+            RoomNumber: r[5],
+            Destination: r[6],
+            Status: r[7],
+            OutGate: r[11],        // hidden exact
+            InGate: r[12],         // hidden exact
+            CheckOut: r[9],        // human readable
+            CheckIn: r[10],        // human readable
+            CheckOutISO: r[13],    // machine friendly
+            CheckInISO: r[14]      // machine friendly
+          });
+        }
+
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Entries");
+
+        const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+        const filename = `khokha-entries-view-${ts}.${format}`;
+
+        if (format === 'csv') {
+          const csv = XLSX.utils.sheet_to_csv(ws);
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        } else {
+          XLSX.writeFile(wb, filename);
+        }
+      }
+
+      $('#btn-export-xlsx').on('click', () => exportVisible('xlsx'));
+      $('#btn-export-csv').on('click', () => exportVisible('csv'));
+    });
+  </script>
 </body>
 </html>
