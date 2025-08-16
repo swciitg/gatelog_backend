@@ -13,7 +13,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const GATELOG_SECRET_KEY = process.env.GATELOG_SECRET_KEY;
-const ONESTOP_LOOKUP_URL = process.env.ONESTOP_LOOKUP_URL; // e.g. http://localhost:9010/test/onestop/api/v3/gatelog/secure
+const ONESTOP_LOOKUP_URL = process.env.ONESTOP_LOOKUP_URL;
 
 function hmacHex(rollNo) {
   return crypto.createHmac("sha256", GATELOG_SECRET_KEY)
@@ -24,7 +24,7 @@ function hmacHex(rollNo) {
 function decryptAesGcm(compact) {
   const [ivB64, tagB64, ctB64] = String(compact).split(".");
   if (!ivB64 || !tagB64 || !ctB64) throw new Error("Malformed encrypted payload");
-  const key = crypto.createHash("sha256").update(GATELOG_SECRET_KEY, "utf8").digest(); // 32B
+  const key = crypto.createHash("sha256").update(GATELOG_SECRET_KEY, "utf8").digest();
   const iv = Buffer.from(ivB64, "base64");
   const tag = Buffer.from(tagB64, "base64");
   const ct  = Buffer.from(ctB64, "base64");
@@ -39,73 +39,51 @@ khokhaEntryRouter.post("/entries/lookup", async (req, res) => {
     if (!GATELOG_SECRET_KEY) return res.status(500).send("Server misconfig: GATELOG_SECRET_KEY missing");
     if (!ONESTOP_LOOKUP_URL) return res.status(500).send("Server misconfig: ONESTOP_LOOKUP_URL missing");
 
-    // Accept rollNumber
     const rollNo = (req.body?.rollNo || req.body?.rollNumber || "").trim();
     if (!rollNo) return res.status(400).send("rollNo is required");
 
-    // Build secure GET to Onestop
     const token = hmacHex(rollNo);
     const url = new URL(ONESTOP_LOOKUP_URL);
     url.searchParams.set("rollNo", rollNo);
     url.searchParams.set("token", token);
 
-    // Optional: debug log to confirm we’re actually calling Onestop
-    // console.log("[lookup] calling:", url.toString());
-
-    const upstream = await fetch(url.toString(), {
-      method: "GET",
-      headers: { Accept: "application/json" },
-    });
-
+    const upstream = await fetch(url.toString(), { method: "GET", headers: { Accept: "application/json" } });
     if (!upstream.ok) {
       const t = await upstream.text().catch(() => "");
       return res.status(upstream.status).send(t || "External lookup failed");
     }
 
-    // Expect { success: true, data: "<iv.tag.ct>" }
     const secureResp = await upstream.json();
     if (!secureResp?.success || !secureResp?.data) {
       return res.status(502).send("Invalid response from secure lookup");
     }
-    console.log("[lookup] secure response:", secureResp.data);
 
-    // Decrypt & map
     const user = JSON.parse(decryptAesGcm(secureResp.data));
-
     const outlookEmail = user.outlookEmail || "";
-    const phoneNumber =
-      typeof user.phoneNumber === "number"
-        ? String(user.phoneNumber).padStart(10, "0")
-        : (user.phoneNumber || "");
-
+    const phoneNumber = typeof user.phoneNumber === "number" ? String(user.phoneNumber).padStart(10, "0") : (user.phoneNumber || "");
     const hostel = user.hostel || "";
     const roomNumber = user.roomNo || user.roomNumber || "";
     const name = user.name || "";
-    console.log("[lookup] user:", { name, rollNo, outlookEmail, phoneNumber, hostel, roomNumber });
 
-    return res.json({ outlookEmail, phoneNumber, hostel, roomNumber , name });
+    return res.json({ outlookEmail, phoneNumber, hostel, roomNumber, name });
   } catch (err) {
     console.error("Lookup error:", err);
     res.status(500).send("Internal lookup error");
   }
 });
 
-
-khokhaEntryRouter.post(
-  "/newEntry",
+khokhaEntryRouter.post("/newEntry",
   securityKeyMiddleware,
   getUserInfo,
   asyncErrorHandler(khokhaController.addNewEntry)
 );
 
-khokhaEntryRouter.patch(
-  "/closeEntry/:id",
+khokhaEntryRouter.patch("/closeEntry/:id",
   securityKeyMiddleware,
   asyncErrorHandler(khokhaController.closeEntry)
 );
 
-khokhaEntryRouter.get(
-  "/history",
+khokhaEntryRouter.get("/history",
   verifyUserInfo,
   asyncErrorHandler(khokhaHistoryController.userHistory)
 );
@@ -124,15 +102,37 @@ khokhaEntryRouter.get("/entries", async (req, res) => {
   }
 });
 
+/**
+ * Live updates endpoint:
+ * - prefer ?sinceUpdated=ISO to return any docs with updatedAt > sinceUpdated
+ * - fallback to legacy ?since=ISO (createdAt > since)
+ * Returns lean docs with only fields the UI needs.
+ */
 khokhaEntryRouter.get("/entries/api", async (req, res) => {
   try {
-    const since = req.query.since;
-    let query = {};
-    if (since) {
-      query = { createdAt: { $gt: new Date(since) } };
+    const { sinceUpdated, since } = req.query;
+    const query = {};
+
+    if (sinceUpdated) {
+      const t = new Date(sinceUpdated);
+      if (!isNaN(t)) query.updatedAt = { $gt: t };
+    } else if (since) {
+      const t = new Date(since);
+      if (!isNaN(t)) query.createdAt = { $gt: t };
     }
-    const newEntries = await KhokhaEntryModel.find(query).sort('-createdAt').lean();
-    res.json(newEntries);
+
+    const results = await KhokhaEntryModel.find(query)
+      .sort('-updatedAt')
+      .lean()
+      .select({
+        name: 1, rollNumber: 1, outlookEmail: 1, phoneNumber: 1,
+        hostel: 1, roomNumber: 1, destination: 1,
+        checkOutTime: 1, checkOutGate: 1,
+        checkInTime: 1, checkInGate: 1,
+        isClosed: 1, createdAt: 1, updatedAt: 1,
+      });
+
+    res.json(results);
   } catch (err) {
     console.error(err);
     res.status(500).send("Server Error");
@@ -143,23 +143,12 @@ khokhaEntryRouter.get("/entries/new", (req, res) => {
   res.render("add-entry", { BASE_URL: req.app.locals.BASE_URL });
 });
 
-
 // Save new entry to DB
 khokhaEntryRouter.post("/entries", async (req, res, next) => {
   try {
     const {
-      name,
-      rollNumber,
-      outlookEmail,
-      phoneNumber,
-      hostel,
-      roomNumber,
-      destination,
-      checkOutTime,
-      checkOutGate,
-      checkInTime,
-      checkInGate,
-      isClosed
+      name, rollNumber, outlookEmail, phoneNumber, hostel, roomNumber,
+      destination, checkOutTime, checkOutGate, checkInTime, checkInGate, isClosed
     } = req.body;
 
     const doc = new KhokhaEntryModel({
@@ -184,86 +173,51 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
   } catch (err) {
     console.error("Create entry error:", err);
     if (err.name === 'ValidationError') {
-      return res.status(400).send(
-        Object.values(err.errors).map(e => e.message).join('; ')
-      );
+      return res.status(400).send(Object.values(err.errors).map(e => e.message).join('; '));
     }
     next(err);
   }
 });
 
+// khokhaEntryRouter.get("/entries/export", (req, res) => {
+//   try {
+//     const hostels = Object.values(Hostels || {});
+//     res.render("export-entries", { BASE_URL: req.app.locals.BASE_URL, hostels });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
 
-khokhaEntryRouter.get("/entries/export", /* verifyUserInfo, */ (req, res) => {
-  try {
-    const hostels = Object.values(Hostels || {});
-    res.render("export-entries", { BASE_URL: req.app.locals.BASE_URL, hostels });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
-// ---- Handle Export (CSV/Excel)
+// ---- Handle Export (CSV/Excel) — unchanged
 khokhaEntryRouter.post("/entries/export", async (req, res) => {
   try {
     const {
       dateField = 'createdAt',
-      from,
-      to,
-      name,
-      rollNumber,
-      hostel,
-      roomNumber,
-      destination,
-      checkOutGate,
-      checkInGate,
-      isClosed,   // 'true' | 'false' | ''
-      format = 'csv'
+      from, to, name, rollNumber, hostel, roomNumber, destination, checkOutGate, checkInGate,
+      isClosed, format = 'csv'
     } = req.body;
 
-    // Build query
     const q = {};
 
-    // Date range
-    if (!from || !to) {
-      return res.status(400).send('Please provide both "from" and "to" date/time.');
-    }
+    if (!from || !to) return res.status(400).send('Please provide both "from" and "to" date/time.');
     const fromDate = new Date(from);
     const toDate = new Date(to);
-    if (isNaN(fromDate) || isNaN(toDate)) {
-      return res.status(400).send('Invalid date format.');
-    }
+    if (isNaN(fromDate) || isNaN(toDate)) return res.status(400).send('Invalid date format.');
     q[dateField] = { $gte: fromDate, $lte: toDate };
 
-    // Optional string filters
-    if (name) {
-      q.name = { $regex: name, $options: 'i' }; // contains, case-insensitive
-    }
-    if (rollNumber) {
-      q.rollNumber = rollNumber; // exact
-    }
-    if (hostel) {
-      q.hostel = hostel;
-    }
-    if (roomNumber) {
-      q.roomNumber = roomNumber;
-    }
-    if (destination) {
-      q.destination = { $regex: destination, $options: 'i' };
-    }
-    if (checkOutGate) {
-      q.checkOutGate = checkOutGate;
-    }
-    if (checkInGate) {
-      q.checkInGate = checkInGate;
-    }
+    if (name)        q.name = { $regex: name, $options: 'i' };
+    if (rollNumber)  q.rollNumber = rollNumber;
+    if (hostel)      q.hostel = hostel;
+    if (roomNumber)  q.roomNumber = roomNumber;
+    if (destination) q.destination = { $regex: destination, $options: 'i' };
+    if (checkOutGate) q.checkOutGate = checkOutGate;
+    if (checkInGate)  q.checkInGate  = checkInGate;
     if (isClosed === 'true') q.isClosed = true;
     if (isClosed === 'false') q.isClosed = false;
 
-    // Fetch
     const docs = await KhokhaEntryModel.find(q).sort('-' + dateField).lean();
 
-    // Prepare flat rows for export (format dates nicely)
     const rows = docs.map(d => ({
       Name: d.name,
       RollNumber: d.rollNumber,
@@ -285,20 +239,16 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
     const filenameBase = `khokha-entries-${dateField}-${fromDate.toISOString().slice(0,16)}_${toDate.toISOString().slice(0,16)}`.replace(/[:]/g, '-');
 
     if (format === 'xlsx') {
-      // Excel
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(rows);
       XLSX.utils.book_append_sheet(wb, ws, "Entries");
       const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-
       res.setHeader('Content-Disposition', `attachment; filename="${filenameBase}.xlsx"`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       return res.send(buf);
     } else {
-      // CSV
       const ws = XLSX.utils.json_to_sheet(rows);
       const csv = XLSX.utils.sheet_to_csv(ws);
-
       res.setHeader('Content-Disposition', `attachment; filename="${filenameBase}.csv"`);
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       return res.send(csv);
@@ -309,43 +259,27 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
   }
 });
 
-
-// Build Mongo query from form body
+// optional preview (unchanged)
 function buildFilter(body) {
   const {
     dateField = "createdAt",
-    from,
-    to,
-    name,
-    rollNumber,
-    hostel,
-    roomNumber,
-    destination,
-    checkOutGate,
-    checkInGate,
-    isClosed,
+    from, to, name, rollNumber, hostel, roomNumber, destination, checkOutGate, checkInGate, isClosed,
   } = body || {};
 
   const q = {};
-
-  // Date range
   if (from || to) {
     const range = {};
     if (from) range.$gte = new Date(from);
     if (to)   range.$lte = new Date(to);
     q[dateField] = range;
   }
-
-  // Text / exact filters
-  if (name)       q.name = { $regex: name, $options: "i" };      // contains
-  if (destination)q.destination = { $regex: destination, $options: "i" };
-  if (rollNumber) q.rollNumber = rollNumber;                      // exact
-  if (roomNumber) q.roomNumber = roomNumber;                      // exact
-  if (hostel)     q.hostel = hostel;                              // exact
-  if (checkOutGate) q.checkOutGate = checkOutGate;                // exact
-  if (checkInGate)  q.checkInGate  = checkInGate;                 // exact
-
-  // Status
+  if (name)         q.name = { $regex: name, $options: "i" };
+  if (destination)  q.destination = { $regex: destination, $options: "i" };
+  if (rollNumber)   q.rollNumber = rollNumber;
+  if (roomNumber)   q.roomNumber = roomNumber;
+  if (hostel)       q.hostel = hostel;
+  if (checkOutGate) q.checkOutGate = checkOutGate;
+  if (checkInGate)  q.checkInGate  = checkInGate;
   if (isClosed === "true")  q.isClosed = true;
   if (isClosed === "false") q.isClosed = false;
 
@@ -381,12 +315,6 @@ khokhaEntryRouter.post("/entries/export/preview", async (req, res) => {
     res.status(500).json({ error: "Failed to preview entries" });
   }
 });
-
-
-
-
-
-
 
 
 export default khokhaEntryRouter;
