@@ -17,7 +17,9 @@
     .header-grad { background: linear-gradient(135deg,#1e88e5 0%,#6f42c1 100%); color: #fff; border-radius: 16px; }
     .header-grad .btn { color:#fff; border-color: rgba(255,255,255,.6); }
     .mini-badge { background:#eef2ff; color:#4338ca; border-radius: 999px; padding: 4px 10px; font-size: .8rem; }
+    .spinner-inline { width: 1rem; height: 1rem; vertical-align: text-bottom; margin-left: .5rem; }
     .profile-pill { background:#f1f5f9; border-radius: 999px; padding: 8px 12px; }
+    .is-loading { opacity: .6; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -34,25 +36,13 @@
       <div class="card-body">
         <div id="alertBox" class="alert d-none" role="alert"></div>
 
-        <!-- Lookup -->
+        <!-- Roll input (auto-fetch on Enter or blur) -->
         <div class="section mb-3">
           <div class="row g-3 align-items-end">
             <div class="col-md-6">
               <label class="form-label">Roll Number</label>
               <input id="rollNumber" type="text" class="form-control" placeholder="e.g:230102013" required>
-              <div class="form-text">Enter the student roll number and fetch details.</div>
-            </div>
-            <div class="col-md-6 d-flex gap-2">
-              <button id="fetchBtn" class="btn btn-primary">
-                <span class="spinner-border spinner-border-sm me-2 d-none" id="fetchSpin"></span>
-                Fetch Details
-              </button>
-              <button id="proceedBtn" class="btn btn-success" type="button" disabled data-bs-toggle="modal" data-bs-target="#detailsModal">
-                Proceed
-              </button>
-              <button id="resetBtn" class="btn btn-outline-secondary" type="button">
-                Reset All
-              </button>
+              <div class="form-text">Press <kbd>Enter</kbd> or move focus to auto-fetch and open the form.</div>
             </div>
           </div>
         </div>
@@ -96,12 +86,13 @@
           <input type="hidden" name="checkOutGate" id="f_checkOutGate">
           <input type="hidden" name="checkInTime" id="f_checkInTime">
           <input type="hidden" name="checkInGate" id="f_checkInGate">
-          <input type="hidden" name="isClosed" id="f_isClosed">
+          <!-- REMOVED: isClosed hidden input -->
         </form>
 
         <!-- Hint -->
         <div class="text-muted label-muted mt-2">
-          After fetching details, click <span class="profile-pill">Proceed</span> to complete the entry.
+          <strong>Note:</strong> If you provide a <em>Check-In Time</em>, the entry will be saved as <b>Closed</b>.  
+          If you leave Check-In empty, it will be saved as <b>Open</b>.
         </div>
       </div>
     </div>
@@ -121,9 +112,15 @@
 
         <div class="modal-body">
           <div class="row g-3">
+            <!-- DESTINATION: restricted to 3 options -->
             <div class="col-12">
               <label class="form-label">Destination</label>
-              <input id="m_destination" type="text" class="form-control" placeholder="City/Location" required>
+              <select id="m_destination" class="form-select" required>
+                <option value="" selected disabled>Select destination</option>
+                <option value="City">City</option>
+                <option value="Khoka">Khoka</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
 
             <div class="col-md-6">
@@ -175,13 +172,7 @@
                 </div>
               </div>
             </div>
-
-            <div class="col-12">
-              <div class="form-check">
-                <input id="m_isClosed" class="form-check-input" type="checkbox" value="true">
-                <label class="form-check-label" for="m_isClosed">Mark as Closed</label>
-              </div>
-            </div>
+            <!-- REMOVED the "Mark as Closed" checkbox -->
           </div>
         </div>
 
@@ -197,6 +188,7 @@
   <script>
     const BASE_URL = '<%= BASE_URL %>';
 
+    // -------- helpers --------
     const alertBox = document.getElementById('alertBox');
     function showAlert(type, msg) {
       alertBox.className = 'alert alert-' + type;
@@ -212,7 +204,7 @@
       el.value = now.toISOString().slice(0,16);
     }
 
-    // Prefill when modal opens and show summary
+    // Prefill modal + summary
     const detailsModalEl = document.getElementById('detailsModal');
     detailsModalEl.addEventListener('show.bs.modal', () => {
       setNowLocal(document.getElementById('m_checkOutTime'));
@@ -223,45 +215,27 @@
       document.getElementById('m_destination').focus();
     });
 
-    // Reset All
-    function resetAll() {
-      hideAlert();
-      // inputs
-      document.getElementById('rollNumber').value = '';
-      ['name','outlookEmail','phoneNumber','hostel','roomNumber'].forEach(id => {
-        document.getElementById(id).value = '';
-      });
-      // hidden form
-      ['f_name','f_rollNumber','f_outlookEmail','f_phoneNumber','f_hostel','f_roomNumber',
-       'f_destination','f_checkOutTime','f_checkOutGate','f_checkInTime','f_checkInGate','f_isClosed'
-      ].forEach(id => document.getElementById(id).value = '');
-      // modal fields
-      document.getElementById('m_destination').value = '';
-      document.getElementById('m_checkOutTime').value = '';
-      document.getElementById('m_checkInTime').value = '';
-      document.getElementById('m_isClosed').checked = false;
-      document.querySelectorAll('input[name="m_checkOutGate"]').forEach(n => n.checked = false);
-      document.querySelectorAll('input[name="m_checkInGate"]').forEach(n => n.checked = false);
-      // disable proceed
-      document.getElementById('proceedBtn').disabled = true;
+    // Hidden form setters
+    function setHiddenFromLookup({name, roll, outlookEmail, phoneNumber, hostel, roomNumber}) {
+      document.getElementById('f_name').value = name || '';
+      document.getElementById('f_rollNumber').value = roll || '';
+      document.getElementById('f_outlookEmail').value = outlookEmail || '';
+      document.getElementById('f_phoneNumber').value = phoneNumber || '';
+      document.getElementById('f_hostel').value = hostel || '';
+      document.getElementById('f_roomNumber').value = roomNumber || '';
     }
 
-    document.getElementById('resetBtn').addEventListener('click', resetAll);
+    // ----- AUTO-FETCH FLOW -----
+    const rollInput = document.getElementById('rollNumber');
+    let fetchInFlight = false;
 
-    // FETCH DETAILS
-    document.getElementById('fetchBtn').addEventListener('click', async (e) => {
-      e.preventDefault();
+    async function tryFetchAndOpen() {
+      const roll = rollInput.value.trim();
+      if (!roll || fetchInFlight) return;
+
       hideAlert();
-
-      const roll = document.getElementById('rollNumber').value.trim();
-      if (!roll) {
-        showAlert('warning', 'Please enter Roll Number first.');
-        return;
-      }
-
-      const btn = document.getElementById('fetchBtn');
-      const spin = document.getElementById('fetchSpin');
-      btn.disabled = true; spin.classList.remove('d-none');
+      fetchInFlight = true;
+      rollInput.classList.add('is-loading');
 
       try {
         const res = await fetch(`${BASE_URL}/entries/lookup`, {
@@ -277,7 +251,7 @@
 
         const data = await res.json();
 
-        // Fill readonly
+        // Fill readonly preview
         document.getElementById('name').value = data.name || '';
         document.getElementById('outlookEmail').value = data.outlookEmail || '';
         document.getElementById('phoneNumber').value = data.phoneNumber || '';
@@ -285,26 +259,38 @@
         document.getElementById('roomNumber').value = data.roomNumber || '';
 
         // Hidden form
-        document.getElementById('f_name').value = data.name || '';
-        document.getElementById('f_rollNumber').value = roll;
-        document.getElementById('f_outlookEmail').value = data.outlookEmail || '';
-        document.getElementById('f_phoneNumber').value = data.phoneNumber || '';
-        document.getElementById('f_hostel').value = data.hostel || '';
-        document.getElementById('f_roomNumber').value = data.roomNumber || '';
+        setHiddenFromLookup({
+          name: data.name,
+          roll,
+          outlookEmail: data.outlookEmail,
+          phoneNumber: data.phoneNumber,
+          hostel: data.hostel,
+          roomNumber: data.roomNumber
+        });
 
-        document.getElementById('proceedBtn').disabled = false;
-        showAlert('success', 'Details fetched successfully.');
+        // Open modal immediately
+        const modal = new bootstrap.Modal(detailsModalEl);
+        modal.show();
       } catch (err) {
-        document.getElementById('proceedBtn').disabled = true;
         showAlert('danger', `Failed to fetch details: ${err.message}`);
       } finally {
-        btn.disabled = false; spin.classList.add('d-none');
+        fetchInFlight = false;
+        rollInput.classList.remove('is-loading');
+      }
+    }
+
+    // Open modal automatically after successful fetch:
+    rollInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        tryFetchAndOpen();
       }
     });
+    rollInput.addEventListener('blur', () => { tryFetchAndOpen(); });
 
-    // SUBMIT from modal
+    // ----- SUBMIT from modal -----
     document.getElementById('modalSubmitBtn').addEventListener('click', () => {
-      const dest = document.getElementById('m_destination').value.trim();
+      const dest = document.getElementById('m_destination').value; // SELECT value (City/Khoka/Other)
       const cout = document.getElementById('m_checkOutTime').value;
       const cg = document.querySelector('input[name="m_checkOutGate"]:checked');
 
@@ -316,15 +302,26 @@
       document.getElementById('f_checkOutTime').value = cout;
       document.getElementById('f_checkOutGate').value = cg.value;
 
-      const cin = document.getElementById('m_checkInTime').value || '';
       const igNode = document.querySelector('input[name="m_checkInGate"]:checked');
       const ig = igNode ? igNode.value : '';
+      let cin = document.getElementById('m_checkInTime').value || '';
+
+      // If In Gate chosen but no Check-In Time, auto-fill now (local)
+      if (ig && !cin) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        cin = now.toISOString().slice(0,16);
+        // document.getElementById('m_checkInTime').value = cin; // optional reflect
+      }
+
       document.getElementById('f_checkInTime').value = cin;
       document.getElementById('f_checkInGate').value = ig;
-      document.getElementById('f_isClosed').value = document.getElementById('m_isClosed').checked ? 'true' : 'false';
 
       document.getElementById('entryForm').submit();
     });
+
+    // Autofocus roll input initially
+    rollInput.focus();
   </script>
 </body>
 </html>
