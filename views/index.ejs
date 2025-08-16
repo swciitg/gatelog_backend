@@ -16,7 +16,7 @@
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- SheetJS (for client-side Excel/CSV export) -->
+  <!-- SheetJS -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
   <style>
@@ -36,8 +36,10 @@
     div.dataTables_scroll { border-radius: 6px; overflow-x: auto; border: 1px solid #444 !important; }
     table.dataTable thead { background-color: #334a61; color: #f4f7f9d7; border-radius: 15px 15px 0 0; }
     table.dataTable thead th, table.dataTable tbody td { text-align: center; vertical-align: middle; padding: 12px 25px; }
-    #entriesTable tbody tr { cursor: default; }
     #entriesTable tbody tr:hover { background-color: rgba(128,206,241,0.1) !important; cursor: pointer; }
+    .badge-open { background:#fff3cd; color:#664d03; }
+    .badge-closed { background:#d1e7dd; color:#0f5132; }
+    .btn-compact { padding: .2rem .5rem; font-size: .8rem; }
     @media (max-width: 600px) { .container { padding: 15px; } h1{ font-size: 2rem; font-weight: 300; } }
   </style>
 </head>
@@ -51,6 +53,14 @@
 
     <div class="d-flex flex-wrap justify-content-end mb-3 gap-2">
       <a class="btn btn-primary" href="<%= BASE_URL %>/entries/new">+ Add New Entry</a>
+
+      <!-- Close by roll (no admin key) -->
+      <div class="input-group" style="max-width: 360px;">
+        <input id="close-roll-input" class="form-control" placeholder="Close by Roll No">
+        <button id="btn-close-by-roll" class="btn btn-danger">Close</button>
+      </div>
+
+      <!-- Export -->
       <button id="btn-export-xlsx" class="btn btn-success">⬇ Export Excel</button>
       <button id="btn-export-csv" class="btn btn-outline-secondary">⬇ Export CSV</button>
     </div>
@@ -132,16 +142,17 @@
           <th>Room</th>            <!-- 5 -->
           <th>Destination</th>     <!-- 6 -->
           <th>Status</th>          <!-- 7 -->
-          <th>Gate</th>            <!-- 8 (combined out/in) -->
-          <th>Check-Out</th>       <!-- 9 (display) -->
-          <th>Check-In</th>        <!-- 10 (display) -->
-          <!-- hidden technical columns for filtering/refresh -->
-          <th>_OutGate</th>        <!-- 11 -->
-          <th>_InGate</th>         <!-- 12 -->
-          <th>_CheckOutISO</th>    <!-- 13 -->
-          <th>_CheckInISO</th>     <!-- 14 -->
-          <th>_Id</th>             <!-- 15 -->
-          <th>_UpdatedAtISO</th>   <!-- 16 -->
+          <th>Gate</th>            <!-- 8 -->
+          <th>Check-Out</th>       <!-- 9 -->
+          <th>Check-In</th>        <!-- 10 -->
+          <th>Actions</th>         <!-- 11 -->
+          <!-- hidden technical columns -->
+          <th>_OutGate</th>        <!-- 12 -->
+          <th>_InGate</th>         <!-- 13 -->
+          <th>_CheckOutISO</th>    <!-- 14 -->
+          <th>_CheckInISO</th>     <!-- 15 -->
+          <th>_Id</th>             <!-- 16 -->
+          <th>_UpdatedAtISO</th>   <!-- 17 -->
         </tr>
       </thead>
       <tbody>
@@ -154,14 +165,26 @@
             <td><%= entry.hostel %></td>
             <td><%= entry.roomNumber %></td>
             <td><%= entry.destination %></td>
-            <td><%= entry.isClosed ? "Closed" : "Open" %></td>
+            <td>
+              <% if (entry.isClosed) { %>
+                <span class="badge badge-closed">Closed</span>
+              <% } else { %>
+                <span class="badge badge-open">Open</span>
+              <% } %>
+            </td>
             <td>
               <div><strong>Out:</strong> <%= entry.checkOutGate %></div>
               <div><strong>In:</strong> <%= entry.checkInGate || "—" %></div>
             </td>
             <td><%= entry.checkOutTime.toLocaleString() %></td>
             <td><%= entry.checkInTime ? entry.checkInTime.toLocaleString() : "—" %></td>
-            <!-- hidden technical columns -->
+            <td>
+              <% if (!entry.isClosed) { %>
+                <button class="btn btn-sm btn-danger btn-compact btn-close-roll" data-roll="<%= entry.rollNumber %>">Close</button>
+              <% } else { %>
+                <span class="text-muted">—</span>
+              <% } %>
+            </td>
             <td><%= entry.checkOutGate %></td>
             <td><%= entry.checkInGate || "—" %></td>
             <td><%= entry.checkOutTime.toISOString() %></td>
@@ -198,16 +221,14 @@
     });
   </script>
 
-  <!-- DATATABLE + FILTER LOGIC + LIVE REFRESH + EXPORT -->
+  <!-- DATATABLE + FILTER LOGIC + LIVE REFRESH + EXPORT + CLOSE-BY-ROLL -->
   <script>
-    // Global variables for refresh
     let table;
-    let lastMaxUpdatedISO = ""; // track max updatedAt we've seen (ISO string)
+    let lastMaxUpdatedISO = "";
 
-    // custom date-range filter using hidden ISO columns
     $.fn.dataTable.ext.search.push(function(settings, data) {
-      const coISO = data[13] || ""; // _CheckOutISO
-      const ciISO = data[14] || ""; // _CheckInISO
+      const coISO = data[14] || "";
+      const ciISO = data[15] || "";
       const coFrom = document.getElementById('f-co-from').value;
       const coTo   = document.getElementById('f-co-to').value;
       const ciFrom = document.getElementById('f-ci-from').value;
@@ -231,16 +252,16 @@
         paging: true,
         searching: true,
         ordering: true,
+        orderMulti: false,                       // 💡 single deciding factor
         pageLength: 25,
         lengthMenu: [10, 25, 50, 100],
-        order: [[9, 'desc']],
+        order: [[17, 'desc']],                   // 💡 latest updated first
         columnDefs: [
-          { targets: [11,12,13,14,15,16], visible: false, searchable: true },
-          { targets: [8,9,10], searchable: false }
+          { targets: [12,13,14,15,16,17], visible: false, searchable: true },
+          { targets: [8,9,10,11], searchable: false }
         ]
       });
 
-      // initialize lastMaxUpdatedISO from current table
       lastMaxUpdatedISO = getMaxUpdatedFromTable();
 
       const escapeRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -264,8 +285,8 @@
       };
       bindSelectExact('#f-hostel', 4);
       bindSelectExact('#f-status', 7);
-      bindSelectExact('#f-outgate', 11);
-      bindSelectExact('#f-ingate', 12);
+      bindSelectExact('#f-outgate', 12);
+      bindSelectExact('#f-ingate', 13);
 
       $('#f-co-from,#f-co-to,#f-ci-from,#f-ci-to').on('change', function(){ table.draw(); });
 
@@ -275,14 +296,15 @@
         $('#f-co-from,#f-co-to,#f-ci-from,#f-ci-to').val('');
         table.columns().every(function(){ this.search(''); });
         table.search('');
-        table.draw();
+        table.order([17,'desc']).draw();        // keep latest-first after reset
       });
 
-      // 30s LIVE REFRESH (using updatedAt)
       setInterval(refreshSinceLastUpdate, 30000);
 
-      // DETAILS MODAL
-      $('#entriesTable tbody').on('click', 'tr', function () {
+      $('#entriesTable tbody').on('click', 'tr', function (e) {
+        if (e.target && (e.target.classList.contains('btn-close-roll') || e.target.closest('.btn-close-roll'))) {
+          return;
+        }
         const rowData = table.row(this).data();
         if (!rowData) return;
         const details = `
@@ -302,7 +324,20 @@
         $('#detailsModal').modal('show');
       });
 
-      // EXPORT BUTTONS
+      $('#entriesTable tbody').on('click', '.btn-close-roll', async function () {
+        const roll = this.getAttribute('data-roll');
+        if (!roll) return;
+        if (!confirm(`Close open entry for roll ${roll}?`)) return;
+        await closeByRoll(roll);
+      });
+
+      document.getElementById('btn-close-by-roll').addEventListener('click', async () => {
+        const roll = document.getElementById('close-roll-input').value.trim();
+        if (!roll) return alert('Enter a roll number.');
+        if (!confirm(`Close open entry for roll ${roll}?`)) return;
+        await closeByRoll(roll);
+      });
+
       function exportVisible(format = 'xlsx') {
         const dt = table.rows({ search: 'applied' }).data();
         if (!dt || dt.length === 0) { alert('No rows to export for current view.'); return; }
@@ -311,11 +346,12 @@
           const r = dt[i];
           rows.push({
             Name: r[0], RollNumber: r[1], OutlookEmail: r[2], PhoneNumber: r[3],
-            Hostel: r[4], RoomNumber: r[5], Destination: r[6], Status: r[7],
-            OutGate: r[11], InGate: r[12],
+            Hostel: r[4], RoomNumber: r[5], Destination: r[6],
+            Status: ('' + r[7]).replace(/<[^>]*>/g,''),
+            OutGate: r[12], InGate: r[13],
             CheckOut: r[9], CheckIn: r[10],
-            CheckOutISO: r[13], CheckInISO: r[14],
-            _Id: r[15], _UpdatedAtISO: r[16]
+            CheckOutISO: r[14], CheckInISO: r[15],
+            _Id: r[16], _UpdatedAtISO: r[17]
           });
         }
         const ws = XLSX.utils.json_to_sheet(rows);
@@ -336,16 +372,25 @@
       $('#btn-export-csv').on('click', () => exportVisible('csv'));
     });
 
-    // --- Helpers for refresh ---
     function getMaxUpdatedFromTable() {
       let maxISO = "";
       const data = $('#entriesTable').DataTable().rows().data();
       for (let i = 0; i < data.length; i++) {
-        const iso = data[i][16] || ""; // _UpdatedAtISO
+        const iso = data[i][17] || "";
         if (iso && (!maxISO || iso > maxISO)) maxISO = iso;
       }
-      // If table was empty, fallback to "now minus 1 day" to avoid missing older updates
       return maxISO || new Date(Date.now() - 24*3600*1000).toISOString();
+    }
+
+    function statusBadge(isClosed) {
+      return isClosed
+        ? '<span class="badge badge-closed">Closed</span>'
+        : '<span class="badge badge-open">Open</span>';
+    }
+
+    function actionsCell(roll, isClosed) {
+      if (isClosed) return '<span class="text-muted">—</span>';
+      return `<button class="btn btn-sm btn-danger btn-compact btn-close-roll" data-roll="${roll}">Close</button>`;
     }
 
     function rowArrayFromDoc(d) {
@@ -361,24 +406,27 @@
         d.hostel,
         d.roomNumber,
         d.destination,
-        d.isClosed ? "Closed" : "Open",
+        statusBadge(!!d.isClosed),
         `<div><strong>Out:</strong> ${outGate}<br><strong>In:</strong> ${inGate}</div>`,
         d.checkOutTime ? new Date(d.checkOutTime).toLocaleString() : "—",
         d.checkInTime ? new Date(d.checkInTime).toLocaleString() : "—",
-        // hidden
+        actionsCell(d.rollNumber, !!d.isClosed),
         outGate,
         inGate,
         coISO,
         ciISO,
         d._id,
-        d.updatedAt ? new Date(d.updatedAt).toISOString() : (d.createdAt ? new Date(d.createdAt).toISOString() : new Date().toISOString())
+        d.updatedAt ? new Date(d.updatedAt).toISOString()
+                    : (d.createdAt ? new Date(d.createdAt).toISOString()
+                                   : new Date().toISOString())
       ];
     }
 
     async function refreshSinceLastUpdate() {
       try {
-        const url = `/khokha/entries/api?sinceUpdated=${encodeURIComponent(lastMaxUpdatedISO)}`;
-        const res = await fetch(url, { headers: { Accept: 'application/json' } });
+        const res = await fetch(`${'<%= BASE_URL %>'}/entries/api?sinceUpdated=${encodeURIComponent(lastMaxUpdatedISO)}`, {
+          headers: { Accept: 'application/json' }
+        });
         if (!res.ok) { console.error('Refresh failed:', res.status); return; }
         const docs = await res.json();
         if (!Array.isArray(docs) || docs.length === 0) return;
@@ -390,30 +438,70 @@
           const rowData = rowArrayFromDoc(d);
           const id = d._id;
 
-          // find existing row by hidden _Id column (15)
           const rowIdx = dt.rows().indexes().toArray().find(idx => {
             const r = dt.row(idx).data();
-            return r && r[15] === id;
+            return r && r[16] === id;
           });
 
           if (rowIdx !== undefined && rowIdx !== null && rowIdx >= 0) {
-            // update in place
             dt.row(rowIdx).data(rowData);
           } else {
-            // add new
             dt.row.add(rowData);
           }
 
-          // track max updated
-          const u = rowData[16];
+          const u = rowData[17];
           if (u && u > newMax) newMax = u;
         });
 
-        // redraw once after batch
-        dt.draw(false);
+        // keep “latest first”
+        dt.order([17,'desc']).draw(false);
         lastMaxUpdatedISO = newMax;
       } catch (e) {
         console.error('Refresh error:', e);
+      }
+    }
+
+    async function closeByRoll(roll) {
+      try {
+        const resp = await fetch(`${'<%= BASE_URL %>'}/entries/close-by-roll`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rollNumber: roll, checkInGate: 'AUTO_CLOSED' })
+        });
+
+        if (!resp.ok) {
+          const t = await resp.text();
+          alert(t || 'Close failed.');
+          return;
+        }
+
+        const dt = $('#entriesTable').DataTable();
+        const idx = dt.rows().indexes().toArray().find(i => {
+          const r = dt.row(i).data();
+          return r && r[1] === roll && ('' + r[7]).toLowerCase().includes('open');
+        });
+
+        const nowISO = new Date().toISOString();
+        const nowLocal = new Date().toLocaleString();
+
+        if (idx !== undefined && idx !== null) {
+          const r = dt.row(idx).data();
+          r[7]  = '<span class="badge badge-closed">Closed</span>';
+          r[10] = r[10] && r[10] !== '—' ? r[10] : nowLocal;
+          r[11] = '<span class="text-muted">—</span>';
+          r[15] = r[15] || nowISO;
+          r[17] = nowISO;
+          dt.row(idx).data(r);
+        }
+
+        // keep list sorted latest-first after change
+        dt.order([17,'desc']).draw(false);
+        refreshSinceLastUpdate();
+
+        alert(`Entry for roll ${roll} closed.`);
+      } catch (err) {
+        console.error(err);
+        alert('Close failed.');
       }
     }
   </script>
