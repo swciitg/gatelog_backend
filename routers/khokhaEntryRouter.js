@@ -34,6 +34,7 @@ function decryptAesGcm(compact) {
   return out.toString("utf8");
 }
 
+/* -------------------- LOOKUP -------------------- */
 khokhaEntryRouter.post("/entries/lookup", async (req, res) => {
   try {
     if (!GATELOG_SECRET_KEY) return res.status(500).send("Server misconfig: GATELOG_SECRET_KEY missing");
@@ -72,6 +73,7 @@ khokhaEntryRouter.post("/entries/lookup", async (req, res) => {
   }
 });
 
+/* -------------------- EXISTING ROUTES -------------------- */
 khokhaEntryRouter.post("/newEntry",
   securityKeyMiddleware,
   getUserInfo,
@@ -90,7 +92,9 @@ khokhaEntryRouter.get("/history",
 
 khokhaEntryRouter.get("/entries", async (req, res) => {
   try {
-    const entries = await KhokhaEntryModel.find().sort('-createdAt').lean();
+    const entries = await KhokhaEntryModel.find()
+      .sort({ updatedAt: -1, createdAt: -1 })   // 🔁 latest first
+      .lean();
     res.render("index", {
       user: req.session.user,
       entries,
@@ -102,11 +106,9 @@ khokhaEntryRouter.get("/entries", async (req, res) => {
   }
 });
 
+
 /**
- * Live updates endpoint:
- * - prefer ?sinceUpdated=ISO to return any docs with updatedAt > sinceUpdated
- * - fallback to legacy ?since=ISO (createdAt > since)
- * Returns lean docs with only fields the UI needs.
+ * Poll API
  */
 khokhaEntryRouter.get("/entries/api", async (req, res) => {
   try {
@@ -143,14 +145,45 @@ khokhaEntryRouter.get("/entries/new", (req, res) => {
   res.render("add-entry", { BASE_URL: req.app.locals.BASE_URL });
 });
 
-// Save new entry to DB
+/* -------------------- AUTO-CLOSE & CREATE NEW -------------------- */
+/**
+ * Business rule:
+ * - A user can have only ONE open entry at a time.
+ * - When creating a new entry:
+ *   1) Close any existing open entries for that rollNumber (isClosed=true)
+ *   2) Create the new entry
+ *   3) The new entry is CLOSED IFF a Check-In Time is provided (checkbox removed)
+ */
 khokhaEntryRouter.post("/entries", async (req, res, next) => {
   try {
     const {
       name, rollNumber, outlookEmail, phoneNumber, hostel, roomNumber,
-      destination, checkOutTime, checkOutGate, checkInTime, checkInGate, isClosed
+      destination, checkOutTime, checkOutGate, checkInTime, checkInGate
     } = req.body;
 
+    if (!rollNumber) return res.status(400).send("rollNumber is required");
+
+    // 1) Close any open entries for this roll
+    await KhokhaEntryModel.updateMany(
+      { rollNumber, isClosed: false },
+      { $set: { isClosed: true, updatedAt: new Date() } }
+    );
+
+    // 2) Determine closure:
+    //    - Closed if Check-In Time provided
+    //    - OR if Check-In Gate provided (we auto-set Check-In Time = now)
+    let checkInTimeDate = null;
+    let closedNow = false;
+
+    if (checkInTime) {
+      checkInTimeDate = new Date(checkInTime);
+      closedNow = true;
+    } else if (checkInGate) {
+      checkInTimeDate = new Date();   // auto-fill now if gate chosen
+      closedNow = true;
+    }
+
+    // 3) Create the new entry
     const doc = new KhokhaEntryModel({
       name,
       rollNumber,
@@ -161,9 +194,9 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
       destination,
       checkOutTime: checkOutTime ? new Date(checkOutTime) : undefined,
       checkOutGate,
-      checkInTime: checkInTime ? new Date(checkInTime) : null,
+      checkInTime: checkInTimeDate,            // null if still open
       checkInGate: checkInGate || null,
-      isClosed: Boolean(isClosed),
+      isClosed: closedNow,
     });
 
     await doc.validate();
@@ -179,17 +212,51 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
   }
 });
 
-// khokhaEntryRouter.get("/entries/export", (req, res) => {
-//   try {
-//     const hostels = Object.values(Hostels || {});
-//     res.render("export-entries", { BASE_URL: req.app.locals.BASE_URL, hostels });
-//   } catch (err) {
-//     console.error(err);
-//     res.status(500).send("Internal Server Error");
-//   }
-// });
 
-// ---- Handle Export (CSV/Excel) — unchanged
+/* -------------------- CLOSE OPEN ENTRY BY ROLL (no admin key) -------------------- */
+khokhaEntryRouter.post("/entries/close-by-roll", async (req, res) => {
+  try {
+    const { rollNumber, checkInGate, checkInTime } = req.body || {};
+    if (!rollNumber) return res.status(400).send("rollNumber is required");
+
+    const openDoc = await KhokhaEntryModel.findOne({ rollNumber, isClosed: false })
+      .sort('-createdAt');
+
+    if (!openDoc) return res.status(404).send("No open entry for this roll number.");
+
+    openDoc.isClosed    = true;
+    openDoc.checkInGate = checkInGate || openDoc.checkInGate || "AUTO_CLOSED";
+    openDoc.checkInTime = checkInTime ? new Date(checkInTime) : (openDoc.checkInTime || new Date());
+    openDoc.updatedAt   = new Date();
+
+    await openDoc.save();
+
+    return res.json({
+      ok: true,
+      id: openDoc._id.toString(),
+      updated: {
+        isClosed: openDoc.isClosed,
+        checkInGate: openDoc.checkInGate,
+        checkInTime: openDoc.checkInTime
+      }
+    });
+  } catch (err) {
+    console.error("Close-by-roll error:", err);
+    res.status(500).send("Failed to close entry.");
+  }
+});
+
+/* -------------------- EXPORT + PREVIEW -------------------- */
+khokhaEntryRouter.get("/entries/export", (req, res) => {
+  try {
+    const hostels = Object.values(Hostels || {});
+    res.render("export-entries", { BASE_URL: req.app.locals.BASE_URL, hostels });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
 khokhaEntryRouter.post("/entries/export", async (req, res) => {
   try {
     const {
@@ -259,7 +326,6 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
   }
 });
 
-// optional preview (unchanged)
 function buildFilter(body) {
   const {
     dateField = "createdAt",
@@ -315,6 +381,5 @@ khokhaEntryRouter.post("/entries/export/preview", async (req, res) => {
     res.status(500).json({ error: "Failed to preview entries" });
   }
 });
-
 
 export default khokhaEntryRouter;
