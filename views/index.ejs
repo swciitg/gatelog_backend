@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>All Khokha Entries</title>
+
+  <!-- jQuery & DataTables -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script> 
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+  <script src="https://cdn.datatables.net/responsive/2.4.1/js/dataTables.responsive.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.4.1/css/responsive.dataTables.min.css">
+
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ececec; color: #090909; margin: 0; padding: 20px; box-shadow: inset 0 0 50px #787676; }
+    .logout-link { position: absolute; top: 30px; right: 80px; color: #20363d; text-decoration: none; font-weight: bold; transition: color 0.3s ease; }
+    .logout-link:hover { color: #78878d; }
+    .container { background-color:#ececec; padding: 40px; border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.5); max-width: 95%; margin: auto; font-size: 1.1rem; }
+    h1 { color: #121213; text-align: center; margin-bottom: 30px; font-weight: 500; font-size: 3rem; }
+    .dataTables_length{ padding-bottom: 20px; }
+    .dataTables_length select { background-color: #1b1b1b; color: #090909; padding: 4px 8px; }
+    .dataTables_length select option { background-color: #ececec; color: #090909; }
+    .dataTables_paginate .paginate_button { color: #090909 !important; border: 1px solid #333 !important; border-radius: 5px; margin: 2px; }
+    ::-webkit-scrollbar { height: 10px; }
+    ::-webkit-scrollbar-track { background: #d6d0d0; }
+    ::-webkit-scrollbar-thumb { background: #5c6976; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #888; }
+    div.dataTables_scroll { border-radius: 6px; overflow-x: auto; border: 1px solid #444 !important; }
+    table.dataTable thead { background-color: #334a61; color: #f4f7f9d7; border-radius: 15px 15px 0 0; }
+    table.dataTable thead th, table.dataTable tbody td { text-align: center; vertical-align: middle; padding: 12px 25px; }
+    #entriesTable tbody tr:hover { background-color: rgba(128,206,241,0.1) !important; cursor: pointer; }
+    .badge-open { background:#fff3cd; color:#664d03; }
+    .badge-closed { background:#d1e7dd; color:#0f5132; }
+    .btn-compact { padding: .2rem .5rem; font-size: .8rem; }
+    @media (max-width: 600px) { .container { padding: 15px; } h1{ font-size: 2rem; font-weight: 300; } }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1 id="welcomemsg"></h1>
+    <a href="<%= process.env.BASE_URL %>/v1/admin/logout" class="logout-link">Logout</a>
+
+    <h1>All Khokha Entries</h1>
+
+    <div class="d-flex flex-wrap justify-content-end mb-3 gap-2">
+      <a class="btn btn-primary" href="<%= BASE_URL %>/entries/new">+ Add New Entry</a>
+
+      <!-- Close by roll (no admin key) -->
+      <div class="input-group" style="max-width: 360px;">
+        <input id="close-roll-input" class="form-control" placeholder="Close by Roll No">
+        <button id="btn-close-by-roll" class="btn btn-danger">Close</button>
+      </div>
+
+      <!-- Export -->
+      <button id="btn-export-xlsx" class="btn btn-success">⬇ Export Excel</button>
+      <button id="btn-export-csv" class="btn btn-outline-secondary">⬇ Export CSV</button>
+    </div>
+
+    <!-- FILTER TOOLBAR -->
+    <div class="card p-3 mb-3">
+      <div class="row g-2 align-items-end">
+        <!-- Row 1: text filters -->
+        <div class="col-md-2"><label class="form-label">Name</label><input id="f-name" class="form-control" placeholder="e.g. Arunika" /></div>
+        <div class="col-md-2"><label class="form-label">Roll No</label><input id="f-roll" class="form-control" placeholder="e.g. 2301..." /></div>
+        <div class="col-md-2"><label class="form-label">Outlook</label><input id="f-outlook" class="form-control" placeholder="abc@iitg.ac.in" /></div>
+        <div class="col-md-2"><label class="form-label">Phone</label><input id="f-phone" class="form-control" placeholder="10 digits" /></div>
+        <div class="col-md-2"><label class="form-label">Room</label><input id="f-room" class="form-control" placeholder="e.g. CT-28" /></div>
+        <div class="col-md-2"><label class="form-label">Destination</label><input id="f-dest" class="form-control" placeholder="e.g. City" /></div>
+
+        <!-- Row 2: selects -->
+        <div class="col-md-2">
+          <label class="form-label">Hostel</label>
+          <select id="f-hostel" class="form-select">
+            <option value="">All</option>
+            <option>LOHIT</option><option>BRAHMAPUTRA</option><option>DISANG</option>
+            <option>KAMENG</option><option>BARAK</option><option>MANAS</option>
+            <option>DIHING</option><option>UMIAM</option><option>SIANG</option>
+            <option>KAPILI</option><option>DHANSIRI</option><option>SUBANSIRI</option>
+            <option>MSH</option><option>GAURANG</option><option>DIBANG</option>
+            <option>NON-HOSTELLER</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Status</label>
+          <select id="f-status" class="form-select">
+            <option value="">All</option>
+            <option>Open</option>
+            <option>Closed</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">Out Gate</label>
+          <select id="f-outgate" class="form-select">
+            <option value="">All</option>
+            <option>Main_Gate</option>
+            <option>KV_Gate</option>
+            <option>Khoka_Gate</option>
+            <option>AUTO_CLOSED</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">In Gate</label>
+          <select id="f-ingate" class="form-select">
+            <option value="">All</option>
+            <option>Main_Gate</option>
+            <option>KV_Gate</option>
+            <option>Khoka_Gate</option>
+            <option>AUTO_CLOSED</option>
+            <option>—</option>
+          </select>
+        </div>
+
+        <!-- Row 3: date ranges -->
+        <div class="col-md-2"><label class="form-label">Check-Out from</label><input id="f-co-from" type="datetime-local" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Check-Out to</label><input id="f-co-to" type="datetime-local" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Check-In from</label><input id="f-ci-from" type="datetime-local" class="form-control" /></div>
+        <div class="col-md-2"><label class="form-label">Check-In to</label><input id="f-ci-to" type="datetime-local" class="form-control" /></div>
+
+        <!-- Row 4: reset -->
+        <div class="col-md-2"><button id="f-reset" class="btn btn-outline-secondary w-100">Reset Filters</button></div>
+      </div>
+    </div>
+
+    <!-- TABLE -->
+    <table id="entriesTable" class="display nowrap" style="width:100%">
+      <thead>
+        <tr>
+          <th>Name</th>            <!-- 0 -->
+          <th>Roll No</th>         <!-- 1 -->
+          <th>Outlook</th>         <!-- 2 -->
+          <th>Phone</th>           <!-- 3 -->
+          <th>Hostel</th>          <!-- 4 -->
+          <th>Room</th>            <!-- 5 -->
+          <th>Destination</th>     <!-- 6 -->
+          <th>Status</th>          <!-- 7 -->
+          <th>Gate</th>            <!-- 8 -->
+          <th>Check-Out</th>       <!-- 9 -->
+          <th>Check-In</th>        <!-- 10 -->
+          <th>Actions</th>         <!-- 11 -->
+          <!-- hidden technical columns -->
+          <th>_OutGate</th>        <!-- 12 -->
+          <th>_InGate</th>         <!-- 13 -->
+          <th>_CheckOutISO</th>    <!-- 14 -->
+          <th>_CheckInISO</th>     <!-- 15 -->
+          <th>_Id</th>             <!-- 16 -->
+          <th>_UpdatedAtISO</th>   <!-- 17 -->
+        </tr>
+      </thead>
+      <tbody>
+        <% entries.forEach(entry => { %>
+          <tr>
+            <td><%= entry.name %></td>
+            <td><%= entry.rollNumber %></td>
+            <td><%= entry.outlookEmail %></td>
+            <td><%= entry.phoneNumber %></td>
+            <td><%= entry.hostel %></td>
+            <td><%= entry.roomNumber %></td>
+            <td><%= entry.destination %></td>
+            <td>
+              <% if (entry.isClosed) { %>
+                <span class="badge badge-closed">Closed</span>
+              <% } else { %>
+                <span class="badge badge-open">Open</span>
+              <% } %>
+            </td>
+            <td>
+              <div><strong>Out:</strong> <%= entry.checkOutGate %></div>
+              <div><strong>In:</strong> <%= entry.checkInGate || "—" %></div>
+            </td>
+            <td><%= entry.checkOutTime.toLocaleString() %></td>
+            <td><%= entry.checkInTime ? entry.checkInTime.toLocaleString() : "—" %></td>
+            <td>
+              <% if (!entry.isClosed) { %>
+                <button class="btn btn-sm btn-danger btn-compact btn-close-roll" data-roll="<%= entry.rollNumber %>">Close</button>
+              <% } else { %>
+                <span class="text-muted">—</span>
+              <% } %>
+            </td>
+            <td><%= entry.checkOutGate %></td>
+            <td><%= entry.checkInGate || "—" %></td>
+            <td><%= entry.checkOutTime.toISOString() %></td>
+            <td><%= entry.checkInTime ? entry.checkInTime.toISOString() : "" %></td>
+            <td><%= entry._id.toString() %></td>
+            <td><%= entry.updatedAt ? entry.updatedAt.toISOString() : entry.createdAt.toISOString() %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- DETAILS MODAL -->
+  <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
+    <div class="modal-dialog"><div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="detailsModalLabel">Entry Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="modalContent"></div>
+    </div></div>
+  </div>
+
+  <!-- WELCOME TYPER -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const userEmail = "<%= user %>";
+      const text = `Welcome, ${userEmail}!`;
+      const element = document.getElementById("welcomemsg");
+      let index = 0;
+      (function typeNextChar() {
+        if (index < text.length) { element.textContent += text.charAt(index++); setTimeout(typeNextChar, 80); }
+      })();
+    });
+  </script>
+
+  <!-- DATATABLE + FILTER LOGIC + LIVE REFRESH + EXPORT + CLOSE-BY-ROLL -->
+  <script>
+    let table;
+    let lastMaxUpdatedISO = "";
+
+    $.fn.dataTable.ext.search.push(function(settings, data) {
+      const coISO = data[14] || "";
+      const ciISO = data[15] || "";
+      const coFrom = document.getElementById('f-co-from').value;
+      const coTo   = document.getElementById('f-co-to').value;
+      const ciFrom = document.getElementById('f-ci-from').value;
+      const ciTo   = document.getElementById('f-ci-to').value;
+
+      const inRange = (iso, fromVal, toVal) => {
+        if (!iso) return !(fromVal || toVal);
+        const t = new Date(iso).getTime();
+        if (fromVal && t < new Date(fromVal).getTime()) return false;
+        if (toVal   && t > new Date(toVal).getTime())   return false;
+        return true;
+      };
+      const coOk = (!coFrom && !coTo) ? true : inRange(coISO, coFrom, coTo);
+      const ciOk = (!ciFrom && !ciTo) ? true : inRange(ciISO, ciFrom, ciTo);
+      return coOk && ciOk;
+    });
+
+    $(document).ready(function () {
+      table = $('#entriesTable').DataTable({
+        scrollX: true,
+        paging: true,
+        searching: true,
+        ordering: true,
+        orderMulti: false,                       // 💡 single deciding factor
+        pageLength: 25,
+        lengthMenu: [10, 25, 50, 100],
+        order: [[17, 'desc']],                   // 💡 latest updated first
+        columnDefs: [
+          { targets: [12,13,14,15,16,17], visible: false, searchable: true },
+          { targets: [8,9,10,11], searchable: false }
+        ]
+      });
+
+      lastMaxUpdatedISO = getMaxUpdatedFromTable();
+
+      const escapeRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      const bindText = (selector, colIdx) => {
+        $(selector).on('input', function(){ table.column(colIdx).search(this.value).draw(); });
+      };
+      bindText('#f-name', 0);
+      bindText('#f-roll', 1);
+      bindText('#f-outlook', 2);
+      bindText('#f-phone', 3);
+      bindText('#f-room', 5);
+      bindText('#f-dest', 6);
+
+      const bindSelectExact = (selector, colIdx) => {
+        $(selector).on('change', function(){
+          const v = this.value;
+          if (!v) table.column(colIdx).search('').draw();
+          else table.column(colIdx).search('^' + escapeRegex(v) + '$', true, false).draw();
+        });
+      };
+      bindSelectExact('#f-hostel', 4);
+      bindSelectExact('#f-status', 7);
+      bindSelectExact('#f-outgate', 12);
+      bindSelectExact('#f-ingate', 13);
+
+      $('#f-co-from,#f-co-to,#f-ci-from,#f-ci-to').on('change', function(){ table.draw(); });
+
+      $('#f-reset').on('click', function(){
+        $('#f-name,#f-roll,#f-outlook,#f-phone,#f-room,#f-dest').val('');
+        $('#f-hostel,#f-status,#f-outgate,#f-ingate').val('');
+        $('#f-co-from,#f-co-to,#f-ci-from,#f-ci-to').val('');
+        table.columns().every(function(){ this.search(''); });
+        table.search('');
+        table.order([17,'desc']).draw();        // keep latest-first after reset
+      });
+
+      setInterval(refreshSinceLastUpdate, 30000);
+
+      $('#entriesTable tbody').on('click', 'tr', function (e) {
+        if (e.target && (e.target.classList.contains('btn-close-roll') || e.target.closest('.btn-close-roll'))) {
+          return;
+        }
+        const rowData = table.row(this).data();
+        if (!rowData) return;
+        const details = `
+          <p><strong>Name:</strong> ${rowData[0]}</p>
+          <p><strong>Roll No:</strong> ${rowData[1]}</p>
+          <p><strong>Outlook:</strong> ${rowData[2]}</p>
+          <p><strong>Phone:</strong> ${rowData[3]}</p>
+          <p><strong>Hostel:</strong> ${rowData[4]}</p>
+          <p><strong>Room:</strong> ${rowData[5]}</p>
+          <p><strong>Destination:</strong> ${rowData[6]}</p>
+          <p><strong>Status:</strong> ${rowData[7]}</p>
+          <p><strong>Gate:</strong> ${rowData[8]}</p>
+          <p><strong>Check-Out:</strong> ${rowData[9]}</p>
+          <p><strong>Check-In:</strong> ${rowData[10]}</p>
+        `;
+        $('#modalContent').html(details);
+        $('#detailsModal').modal('show');
+      });
+
+      $('#entriesTable tbody').on('click', '.btn-close-roll', async function () {
+        const roll = this.getAttribute('data-roll');
+        if (!roll) return;
+        if (!confirm(`Close open entry for roll ${roll}?`)) return;
+        await closeByRoll(roll);
+      });
+
+      document.getElementById('btn-close-by-roll').addEventListener('click', async () => {
+        const roll = document.getElementById('close-roll-input').value.trim();
+        if (!roll) return alert('Enter a roll number.');
+        if (!confirm(`Close open entry for roll ${roll}?`)) return;
+        await closeByRoll(roll);
+      });
+
+      function exportVisible(format = 'xlsx') {
+        const dt = table.rows({ search: 'applied' }).data();
+        if (!dt || dt.length === 0) { alert('No rows to export for current view.'); return; }
+        const rows = [];
+        for (let i = 0; i < dt.length; i++) {
+          const r = dt[i];
+          rows.push({
+            Name: r[0], RollNumber: r[1], OutlookEmail: r[2], PhoneNumber: r[3],
+            Hostel: r[4], RoomNumber: r[5], Destination: r[6],
+            Status: ('' + r[7]).replace(/<[^>]*>/g,''),
+            OutGate: r[12], InGate: r[13],
+            CheckOut: r[9], CheckIn: r[10],
+            CheckOutISO: r[14], CheckInISO: r[15],
+            _Id: r[16], _UpdatedAtISO: r[17]
+          });
+        }
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Entries");
+        const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+        const filename = `khokha-entries-view-${ts}.${format}`;
+        if (format === 'csv') {
+          const csv = XLSX.utils.sheet_to_csv(ws);
+          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename;
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        } else {
+          XLSX.writeFile(wb, filename);
+        }
+      }
+      $('#btn-export-xlsx').on('click', () => exportVisible('xlsx'));
+      $('#btn-export-csv').on('click', () => exportVisible('csv'));
+    });
+
+    function getMaxUpdatedFromTable() {
+      let maxISO = "";
+      const data = $('#entriesTable').DataTable().rows().data();
+      for (let i = 0; i < data.length; i++) {
+        const iso = data[i][17] || "";
+        if (iso && (!maxISO || iso > maxISO)) maxISO = iso;
+      }
+      return maxISO || new Date(Date.now() - 24*3600*1000).toISOString();
+    }
+
+    function statusBadge(isClosed) {
+      return isClosed
+        ? '<span class="badge badge-closed">Closed</span>'
+        : '<span class="badge badge-open">Open</span>';
+    }
+
+    function actionsCell(roll, isClosed) {
+      if (isClosed) return '<span class="text-muted">—</span>';
+      return `<button class="btn btn-sm btn-danger btn-compact btn-close-roll" data-roll="${roll}">Close</button>`;
+    }
+
+    function rowArrayFromDoc(d) {
+      const outGate = d.checkOutGate || '';
+      const inGate  = d.checkInGate || '—';
+      const coISO   = d.checkOutTime ? new Date(d.checkOutTime).toISOString() : '';
+      const ciISO   = d.checkInTime ? new Date(d.checkInTime).toISOString() : '';
+      return [
+        d.name,
+        d.rollNumber,
+        d.outlookEmail,
+        d.phoneNumber,
+        d.hostel,
+        d.roomNumber,
+        d.destination,
+        statusBadge(!!d.isClosed),
+        `<div><strong>Out:</strong> ${outGate}<br><strong>In:</strong> ${inGate}</div>`,
+        d.checkOutTime ? new Date(d.checkOutTime).toLocaleString() : "—",
+        d.checkInTime ? new Date(d.checkInTime).toLocaleString() : "—",
+        actionsCell(d.rollNumber, !!d.isClosed),
+        outGate,
+        inGate,
+        coISO,
+        ciISO,
+        d._id,
+        d.updatedAt ? new Date(d.updatedAt).toISOString()
+                    : (d.createdAt ? new Date(d.createdAt).toISOString()
+                                   : new Date().toISOString())
+      ];
+    }
+
+    async function refreshSinceLastUpdate() {
+      try {
+        const res = await fetch(`${'<%= BASE_URL %>'}/entries/api?sinceUpdated=${encodeURIComponent(lastMaxUpdatedISO)}`, {
+          headers: { Accept: 'application/json' }
+        });
+        if (!res.ok) { console.error('Refresh failed:', res.status); return; }
+        const docs = await res.json();
+        if (!Array.isArray(docs) || docs.length === 0) return;
+
+        const dt = $('#entriesTable').DataTable();
+        let newMax = lastMaxUpdatedISO;
+
+        docs.forEach(d => {
+          const rowData = rowArrayFromDoc(d);
+          const id = d._id;
+
+          const rowIdx = dt.rows().indexes().toArray().find(idx => {
+            const r = dt.row(idx).data();
+            return r && r[16] === id;
+          });
+
+          if (rowIdx !== undefined && rowIdx !== null && rowIdx >= 0) {
+            dt.row(rowIdx).data(rowData);
+          } else {
+            dt.row.add(rowData);
+          }
+
+          const u = rowData[17];
+          if (u && u > newMax) newMax = u;
+        });
+
+        // keep “latest first”
+        dt.order([17,'desc']).draw(false);
+        lastMaxUpdatedISO = newMax;
+      } catch (e) {
+        console.error('Refresh error:', e);
+      }
+    }
+
+    async function closeByRoll(roll) {
+      try {
+        const resp = await fetch(`${'<%= BASE_URL %>'}/entries/close-by-roll`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rollNumber: roll, checkInGate: 'AUTO_CLOSED' })
+        });
+
+        if (!resp.ok) {
+          const t = await resp.text();
+          alert(t || 'Close failed.');
+          return;
+        }
+
+        const dt = $('#entriesTable').DataTable();
+        const idx = dt.rows().indexes().toArray().find(i => {
+          const r = dt.row(i).data();
+          return r && r[1] === roll && ('' + r[7]).toLowerCase().includes('open');
+        });
+
+        const nowISO = new Date().toISOString();
+        const nowLocal = new Date().toLocaleString();
+
+        if (idx !== undefined && idx !== null) {
+          const r = dt.row(idx).data();
+          r[7]  = '<span class="badge badge-closed">Closed</span>';
+          r[10] = r[10] && r[10] !== '—' ? r[10] : nowLocal;
+          r[11] = '<span class="text-muted">—</span>';
+          r[15] = r[15] || nowISO;
+          r[17] = nowISO;
+          dt.row(idx).data(r);
+        }
+
+        // keep list sorted latest-first after change
+        dt.order([17,'desc']).draw(false);
+        refreshSinceLastUpdate();
+
+        alert(`Entry for roll ${roll} closed.`);
+      } catch (err) {
+        console.error(err);
+        alert('Close failed.');
+      }
+    }
+  </script>
+</body>
+</html>
