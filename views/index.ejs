@@ -133,7 +133,7 @@
       </div>
     </div>
 
-    <!-- TABLE (empty body; rows are fetched page-wise) -->
+    <!-- TABLE -->
     <table id="entriesTable" class="display nowrap" style="width:100%">
       <thead>
         <tr>
@@ -209,14 +209,12 @@
         deferRender: true,
         pageLength: 25,
         lengthMenu: [10, 25, 50, 100, 200],
-        // We rely on backend to always return latest-first by updatedAt
-        order: [], // no client ordering
+        order: [], // rely on backend sorting
         ajax: {
           url: `${BASE_URL}/entries/table`,
           type: 'POST',
           contentType: 'application/json',
           data: function (d) {
-            // Attach our filters; keep DataTables draw/start/length for server
             return JSON.stringify({
               draw: d.draw, start: d.start, length: d.length,
               filters: collectFilters()
@@ -246,7 +244,7 @@
         ]
       });
 
-      // Any filter change → reload current page (keeps pagination after change)
+      // Any filter change → reload current page
       $('#f-name,#f-roll,#f-outlook,#f-phone,#f-room').on('input',  () => table.ajax.reload(null, true));
       $('#f-dest,#f-hostel,#f-status,#f-outgate,#f-ingate,#f-co-from,#f-co-to,#f-ci-from,#f-ci-to')
         .on('change', () => table.ajax.reload(null, true));
@@ -258,7 +256,7 @@
         table.ajax.reload(null, true);
       });
 
-      // Periodic refresh (stays on same page)
+      // Periodic refresh
       setInterval(() => table.ajax.reload(null, false), 30000);
 
       // Details modal
@@ -291,7 +289,7 @@
         await closeByRoll(roll);
       });
 
-      // Topbar close
+      // Topbar Close-by-roll
       document.getElementById('btn-close-by-roll').addEventListener('click', async () => {
         const roll = document.getElementById('close-roll-input').value.trim();
         if (!roll) return alert('Enter a roll number.');
@@ -299,27 +297,15 @@
         await closeByRoll(roll);
       });
 
-      // Export current FILTERED set (full set, not just current page)
+      // Export current FILTERED set (entire filtered dataset)
       const postExport = (format) => {
         const f = collectFilters();
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `${BASE_URL}/entries/export`;
-        // map filters to existing export API body
         const add = (k,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i); };
-        add('dateField','updatedAt'); // export sorted by latest
-        add('from', f.coFrom || '1970-01-01T00:00');
-        add('to',   f.coTo   || new Date().toISOString().slice(0,16));
-        if (f.name)        add('name', f.name);
-        if (f.rollNumber)  add('rollNumber', f.rollNumber);
-        if (f.hostel)      add('hostel', f.hostel);
-        if (f.room)        add('roomNumber', f.room);
-        if (f.destination) add('destination', f.destination);
-        if (f.outGate)     add('checkOutGate', f.outGate);
-        if (f.inGate)      add('checkInGate', f.inGate === '—' ? '' : f.inGate);
-        if (f.status === 'Open')   add('isClosed', 'false');
-        if (f.status === 'Closed') add('isClosed', 'true');
-        add('format', format);
+        add('filters', JSON.stringify(f)); // send filters verbatim
+        add('format', format);             // 'xlsx' or 'csv'
         document.body.appendChild(form);
         form.submit();
         form.remove();
@@ -340,7 +326,6 @@
           alert(t || 'Close failed.');
           return;
         }
-        // reload current page without resetting pagination
         $('#entriesTable').DataTable().ajax.reload(null, false);
         alert(`Entry for roll ${roll} closed.`);
       } catch (err) {
