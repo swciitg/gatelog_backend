@@ -90,22 +90,93 @@ khokhaEntryRouter.get("/history",
   asyncErrorHandler(khokhaHistoryController.userHistory)
 );
 
-khokhaEntryRouter.get("/entries", async (req, res) => {
-  try {
-    const entries = await KhokhaEntryModel.find()
-      .sort({ updatedAt: -1, createdAt: -1 })   // 🔁 latest first
-      .lean();
-    res.render("index", {
-      user: req.session.user,
-      entries,
-      BASE_URL: req.app.locals.BASE_URL
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
-  }
+khokhaEntryRouter.get("/entries", (req, res) => {
+  res.render("index", {
+    user: req.session.user,
+    BASE_URL: req.app.locals.BASE_URL
+  });
 });
 
+
+khokhaEntryRouter.post("/entries/table", async (req, res) => {
+  try {
+    // DataTables standard fields
+    const draw   = Number(req.body.draw || 1);
+    const start  = Math.max(Number(req.body.start || 0), 0);
+    const length = Math.min(Math.max(Number(req.body.length || 25), 1), 200); // cap page size
+    const filters = req.body.filters || {};
+
+    // Build Mongo query from filters
+    const q = {};
+    if (filters.name)       q.name        = { $regex: filters.name, $options: 'i' };
+    if (filters.rollNumber) q.rollNumber  = String(filters.rollNumber).trim();
+    if (filters.outlook)    q.outlookEmail= { $regex: filters.outlook, $options: 'i' };
+    if (filters.phone)      q.phoneNumber = { $regex: filters.phone, $options: 'i' };
+    if (filters.hostel)     q.hostel      = filters.hostel;
+    if (filters.room)       q.roomNumber  = filters.room;
+    if (filters.destination)q.destination = filters.destination; // “City|Khoka|Other”
+    if (filters.outGate)    q.checkOutGate= filters.outGate;
+    if (filters.inGate)     q.checkInGate = (filters.inGate === '—') ? { $in: [null, '', undefined] } : filters.inGate;
+    if (filters.status === 'Open')   q.isClosed = false;
+    if (filters.status === 'Closed') q.isClosed = true;
+
+    // Date ranges
+    const addRange = (field, from, to) => {
+      if (!from && !to) return;
+      q[field] = {};
+      if (from) q[field].$gte = new Date(from);
+      if (to)   q[field].$lte = new Date(to);
+    };
+    addRange('checkOutTime', filters.coFrom, filters.coTo);
+    addRange('checkInTime',  filters.ciFrom, filters.ciTo);
+
+    // Decide sorting: “latest only” → updatedAt desc (fallback createdAt when updatedAt missing)
+    // We always sort by updatedAt desc for consistency.
+    const sort = { updatedAt: -1, createdAt: -1 };
+
+    // Counts + page
+    const [recordsTotal, recordsFiltered, rows] = await Promise.all([
+      KhokhaEntryModel.estimatedDocumentCount(),             // super fast count of ALL docs
+      KhokhaEntryModel.countDocuments(q),                    // count of filtered docs
+      KhokhaEntryModel.find(q)
+        .sort(sort)
+        .skip(start)
+        .limit(length)
+        .lean()
+        .select({
+          name: 1, rollNumber: 1, outlookEmail: 1, phoneNumber: 1,
+          hostel: 1, roomNumber: 1, destination: 1,
+          checkOutTime: 1, checkOutGate: 1,
+          checkInTime: 1, checkInGate: 1,
+          isClosed: 1, createdAt: 1, updatedAt: 1
+        })
+    ]);
+
+    // Shape rows for the front-end (keep raw ISO for time)
+    const data = rows.map(d => ({
+      _id:          d._id.toString(),
+      name:         d.name || '',
+      rollNumber:   d.rollNumber || '',
+      outlookEmail: d.outlookEmail || '',
+      phoneNumber:  d.phoneNumber || '',
+      hostel:       d.hostel || '',
+      roomNumber:   d.roomNumber || '',
+      destination:  d.destination || '',
+      isClosed:     !!d.isClosed,
+      checkOutGate: d.checkOutGate || '',
+      checkInGate:  d.checkInGate || '',
+      checkOutTime: d.checkOutTime ? new Date(d.checkOutTime).toISOString() : '',
+      checkInTime:  d.checkInTime ? new Date(d.checkInTime).toISOString() : '',
+      updatedAtISO: d.updatedAt ? new Date(d.updatedAt).toISOString()
+                                : (d.createdAt ? new Date(d.createdAt).toISOString() : '')
+    }));
+
+    res.json({ draw, recordsTotal, recordsFiltered, data });
+  } catch (err) {
+    console.error("entries/table error:", err);
+    res.status(500).json({ error: "Failed to load entries" });
+  }
+});
 
 /**
  * Poll API
