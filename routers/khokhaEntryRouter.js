@@ -11,6 +11,7 @@ const khokhaEntryRouter = express.Router();
 import crypto from "crypto";
 import dotenv from 'dotenv';
 dotenv.config();
+const escapeRegex = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const GATELOG_SECRET_KEY = process.env.GATELOG_SECRET_KEY;
 const ONESTOP_LOOKUP_URL = process.env.ONESTOP_LOOKUP_URL;
@@ -90,22 +91,114 @@ khokhaEntryRouter.get("/history",
   asyncErrorHandler(khokhaHistoryController.userHistory)
 );
 
-khokhaEntryRouter.get("/entries", async (req, res) => {
-  try {
-    const entries = await KhokhaEntryModel.find()
-      .sort({ updatedAt: -1, createdAt: -1 })   // 🔁 latest first
-      .lean();
-    res.render("index", {
-      user: req.session.user,
-      entries,
-      BASE_URL: req.app.locals.BASE_URL
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
-  }
+khokhaEntryRouter.get("/entries", (req, res) => {
+  res.render("index", {
+    user: req.session.user,
+    BASE_URL: req.app.locals.BASE_URL
+  });
 });
 
+khokhaEntryRouter.post("/entries/table", async (req, res) => {
+  try {
+    // DataTables standard fields
+    const draw   = Number(req.body.draw || 1);
+    const start  = Math.max(Number(req.body.start || 0), 0);
+    const length = Math.min(Math.max(Number(req.body.length || 25), 1), 200); // cap page size
+    const filters = req.body.filters || {};
+
+    // ---------- Build Mongo query ----------
+    const base = {};  // simple predicates
+    const and  = [];  // advanced predicates that need $expr, etc.
+
+    if (filters.name)       base.name         = { $regex: escapeRegex(filters.name), $options: 'i' };
+    if (filters.rollNumber) base.rollNumber   = String(filters.rollNumber).trim();
+    if (filters.outlook)    base.outlookEmail = { $regex: escapeRegex(filters.outlook), $options: 'i' };
+
+    // Phone stored as Number -> search as string using $expr+$toString
+    if (filters.phone) {
+      const v = String(filters.phone).trim();
+      and.push({
+        $expr: {
+          $regexMatch: {
+            input: { $toString: "$phoneNumber" },
+            regex: escapeRegex(v),
+            options: "i"
+          }
+        }
+      });
+    }
+
+    if (filters.hostel)      base.hostel       = filters.hostel;
+    if (filters.room)        base.roomNumber   = filters.room;
+    if (filters.destination) base.destination  = filters.destination; // City | Khoka | Other
+    if (filters.outGate)     base.checkOutGate = filters.outGate;
+    if (filters.inGate) {
+      base.checkInGate = (filters.inGate === '—') ? { $in: [null, '', undefined] } : filters.inGate;
+    }
+    if (filters.status === 'Open')   base.isClosed = false;
+    if (filters.status === 'Closed') base.isClosed = true;
+
+    // Date ranges
+    const addRange = (field, from, to) => {
+      if (!from && !to) return;
+      const r = {};
+      if (from) r.$gte = new Date(from);
+      if (to)   r.$lte = new Date(to);
+      base[field] = r;
+    };
+    addRange('checkOutTime', filters.coFrom, filters.coTo);
+    addRange('checkInTime',  filters.ciFrom, filters.ciTo);
+
+    // Merge base + and into the final query
+    const q = and.length
+      ? (Object.keys(base).length ? { $and: [base, ...and] } : { $and: and })
+      : base;
+
+    // ---------- Query ----------
+    const sort = { updatedAt: -1, createdAt: -1 }; // latest first
+
+    const [recordsTotal, recordsFiltered, rows] = await Promise.all([
+      KhokhaEntryModel.estimatedDocumentCount(),   // fast total (unfiltered)
+      KhokhaEntryModel.countDocuments(q),          // filtered total
+      KhokhaEntryModel.find(q)
+        .sort(sort)
+        .skip(start)
+        .limit(length)
+        .lean()
+        .select({
+          name: 1, rollNumber: 1, outlookEmail: 1, phoneNumber: 1,
+          hostel: 1, roomNumber: 1, destination: 1,
+          checkOutTime: 1, checkOutGate: 1,
+          checkInTime: 1, checkInGate: 1,
+          isClosed: 1, createdAt: 1, updatedAt: 1
+        })
+    ]);
+
+    // Shape rows for the front-end (keep raw ISO for time)
+    const data = rows.map(d => ({
+      _id:          d._id.toString(),
+      name:         d.name || '',
+      rollNumber:   d.rollNumber || '',
+      outlookEmail: d.outlookEmail || '',
+      phoneNumber:  d.phoneNumber || '',
+      hostel:       d.hostel || '',
+      roomNumber:   d.roomNumber || '',
+      destination:  d.destination || '',
+      isClosed:     !!d.isClosed,
+      checkOutGate: d.checkOutGate || '',
+      checkInGate:  d.checkInGate || '',
+      checkOutTime: d.checkOutTime ? new Date(d.checkOutTime).toISOString() : '',
+      checkInTime:  d.checkInTime ? new Date(d.checkInTime).toISOString() : '',
+      updatedAtISO: d.updatedAt ? new Date(d.updatedAt).toISOString()
+                                : (d.createdAt ? new Date(d.createdAt).toISOString() : '')
+    }));
+
+    res.json({ draw, recordsTotal, recordsFiltered, data });
+  } catch (err) {
+    console.error("entries/table error:", err);
+    res.status(500).json({ error: "Failed to load entries" });
+  }
+});
 
 /**
  * Poll API
@@ -146,14 +239,6 @@ khokhaEntryRouter.get("/entries/new", (req, res) => {
 });
 
 /* -------------------- AUTO-CLOSE & CREATE NEW -------------------- */
-/**
- * Business rule:
- * - A user can have only ONE open entry at a time.
- * - When creating a new entry:
- *   1) Close any existing open entries for that rollNumber (isClosed=true)
- *   2) Create the new entry
- *   3) The new entry is CLOSED IFF a Check-In Time is provided (checkbox removed)
- */
 khokhaEntryRouter.post("/entries", async (req, res, next) => {
   try {
     const {
@@ -170,8 +255,6 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
     );
 
     // 2) Determine closure:
-    //    - Closed if Check-In Time provided
-    //    - OR if Check-In Gate provided (we auto-set Check-In Time = now)
     let checkInTimeDate = null;
     let closedNow = false;
 
@@ -211,7 +294,6 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
     next(err);
   }
 });
-
 
 /* -------------------- CLOSE OPEN ENTRY BY ROLL (no admin key) -------------------- */
 khokhaEntryRouter.post("/entries/close-by-roll", async (req, res) => {
@@ -257,12 +339,117 @@ khokhaEntryRouter.get("/entries/export", (req, res) => {
   }
 });
 
+// UPDATED: export current filtered set (same query semantics as /entries/table)
 khokhaEntryRouter.post("/entries/export", async (req, res) => {
   try {
+    const { format = 'csv' } = req.body;
+
+    // If UI sent the DataTables filters verbatim
+    if (req.body.filters) {
+      let filters;
+      try {
+        filters = JSON.parse(req.body.filters || '{}');
+      } catch {
+        return res.status(400).send('Invalid filters payload.');
+      }
+
+      const base = {};
+      const and  = [];
+
+      if (filters.name)       base.name         = { $regex: escapeRegex(filters.name), $options: 'i' };
+      if (filters.rollNumber) base.rollNumber   = String(filters.rollNumber).trim();
+      if (filters.outlook)    base.outlookEmail = { $regex: escapeRegex(filters.outlook), $options: 'i' };
+
+      if (filters.phone) {
+        const v = String(filters.phone).trim();
+        and.push({
+          $expr: {
+            $regexMatch: {
+              input: { $toString: "$phoneNumber" },
+              regex: escapeRegex(v),
+              options: "i"
+            }
+          }
+        });
+      }
+
+      if (filters.hostel)      base.hostel       = filters.hostel;
+      if (filters.room)        base.roomNumber   = filters.room;
+      if (filters.destination) base.destination  = filters.destination;
+      if (filters.outGate)     base.checkOutGate = filters.outGate;
+      if (filters.inGate) {
+        base.checkInGate = (filters.inGate === '—') ? { $in: [null, '', undefined] } : filters.inGate;
+      }
+      if (filters.status === 'Open')   base.isClosed = false;
+      if (filters.status === 'Closed') base.isClosed = true;
+
+      const addRange = (field, from, to) => {
+        if (!from && !to) return;
+        const r = {};
+        if (from) r.$gte = new Date(from);
+        if (to)   r.$lte = new Date(to);
+        base[field] = r;
+      };
+      addRange('checkOutTime', filters.coFrom, filters.coTo);
+      addRange('checkInTime',  filters.ciFrom, filters.ciTo);
+
+      const q = and.length
+        ? (Object.keys(base).length ? { $and: [base, ...and] } : { $and: and })
+        : base;
+
+      const sort = { updatedAt: -1, createdAt: -1 };
+
+      const docs = await KhokhaEntryModel.find(q)
+        .sort(sort)
+        .lean()
+        .select({
+          name: 1, rollNumber: 1, outlookEmail: 1, phoneNumber: 1,
+          hostel: 1, roomNumber: 1, destination: 1,
+          checkOutTime: 1, checkOutGate: 1,
+          checkInTime: 1, checkInGate: 1,
+          isClosed: 1, createdAt: 1, updatedAt: 1
+        });
+
+      const rows = docs.map(d => ({
+        Name: d.name,
+        RollNumber: d.rollNumber,
+        OutlookEmail: d.outlookEmail,
+        PhoneNumber: d.phoneNumber,
+        Hostel: d.hostel,
+        RoomNumber: d.roomNumber,
+        Destination: d.destination,
+        CheckOutGate: d.checkOutGate,
+        CheckOutTime: d.checkOutTime ? new Date(d.checkOutTime).toISOString() : '',
+        CheckInGate: d.checkInGate || '',
+        CheckInTime: d.checkInTime ? new Date(d.checkInTime).toISOString() : '',
+        Status: d.isClosed ? 'Closed' : 'Open',
+        CreatedAt: d.createdAt ? new Date(d.createdAt).toISOString() : '',
+        UpdatedAt: d.updatedAt ? new Date(d.updatedAt).toISOString() : '',
+        _id: d._id?.toString() || ''
+      }));
+
+      if (format === 'xlsx') {
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, "Entries");
+        const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
+        res.setHeader('Content-Disposition', `attachment; filename="khokha-entries-filtered.xlsx"`);
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        return res.send(buf);
+      } else {
+        const ws = XLSX.utils.json_to_sheet(rows);
+        const csv = XLSX.utils.sheet_to_csv(ws);
+        res.setHeader('Content-Disposition', `attachment; filename="khokha-entries-filtered.csv"`);
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        return res.send(csv);
+      }
+    }
+
+    // Legacy fallback (old params)
     const {
       dateField = 'createdAt',
       from, to, name, rollNumber, hostel, roomNumber, destination, checkOutGate, checkInGate,
-      isClosed, format = 'csv'
+      isClosed
     } = req.body;
 
     const q = {};
@@ -303,20 +490,18 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
       _id: d._id?.toString() || ''
     }));
 
-    const filenameBase = `khokha-entries-${dateField}-${fromDate.toISOString().slice(0,16)}_${toDate.toISOString().slice(0,16)}`.replace(/[:]/g, '-');
-
     if (format === 'xlsx') {
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(rows);
       XLSX.utils.book_append_sheet(wb, ws, "Entries");
       const buf = XLSX.write(wb, { type: 'buffer', bookType: 'xlsx' });
-      res.setHeader('Content-Disposition', `attachment; filename="${filenameBase}.xlsx"`);
+      res.setHeader('Content-Disposition', `attachment; filename="khokha-entries.xlsx"`);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
       return res.send(buf);
     } else {
       const ws = XLSX.utils.json_to_sheet(rows);
       const csv = XLSX.utils.sheet_to_csv(ws);
-      res.setHeader('Content-Disposition', `attachment; filename="${filenameBase}.csv"`);
+      res.setHeader('Content-Disposition', `attachment; filename="khokha-entries.csv"`);
       res.setHeader('Content-Type', 'text/csv; charset=utf-8');
       return res.send(csv);
     }

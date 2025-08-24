@@ -29,6 +29,7 @@ export const getOnestopUser = async (authHeader, onestopSecurityKey) => {
         } else if (res.status === 418) {
             throw new UserBlockedError(res.data.message);
         } else {
+            console.log(`Unexpected error: ${res.status} - ${res.data.message}: ${e}`);
             throw new CustomError(res.data.message, res.status, 'Internal Server Error');
         }
     }

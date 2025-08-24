@@ -12,7 +12,7 @@ console.log('User credentials:', user.username, user.passwordHash);
 
 export const getLoginPage = (req, res) => {
   if(req.session.user) {
-    return res.redirect('/v1/admin/login');
+    return res.redirect('/new/admin/login');
   }
   res.render('login', { error: null });
 };
@@ -22,7 +22,7 @@ export const login = (req, res) => {
     console.log('Login attempt:', username, password);
   if (username === user.username && bcrypt.compareSync(password, user.passwordHash)) {
     req.session.user = username;
-    res.redirect(process.env.BASE_URL + '/v1/admin/');
+    res.redirect(process.env.BASE_URL + '/new/admin/');
   } else {
     res.render('login', { error: 'Invalid credentials' });
   }
@@ -32,7 +32,7 @@ export const login = (req, res) => {
 export const getHomePage = async(req, res) => {
    const entries = await khokhaEntryModel.find().sort('-createdAt');
     if (!req.session.user) {
-        return res.redirect(process.env.BASE_URL +'/v1/admin/login');
+        return res.redirect(process.env.BASE_URL +'/new/admin/login');
     }
     res.render('index', {files:[] , entries,  user: req.session.user });  
     }
@@ -41,7 +41,7 @@ export const getHomePage = async(req, res) => {
 
 export const logout = (req, res) => {
   req.session.destroy(() => {
-    res.redirect(process.env.BASE_URL + '/v1/admin/login');
+    res.redirect(process.env.BASE_URL + '/new/admin/login');
   });
 };
 
@@ -49,7 +49,7 @@ export const isAuthenticated = (req, res, next) => {
   if (req.session.user) {
     next();
   } else {
-    res.redirect(process.env.BASE_URL + '/v1/admin/login');
+    res.redirect(process.env.BASE_URL + '/new/admin/login');
   }
 };
 export default {

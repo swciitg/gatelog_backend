@@ -30,7 +30,7 @@
           <h3 class="m-0">Add Khokha Entry</h3>
           <div class="mini-badge mt-2">Gate Log • Secure Lookup</div>
         </div>
-        <a class="btn btn-outline-light" href="<%= BASE_URL %>">← Back</a>
+        <a class="btn btn-outline-light" href="<%= BASE_URL %>/new/admin">← Back</a>
       </div>
 
       <div class="card-body">
@@ -91,7 +91,7 @@
 
         <!-- Hint -->
         <div class="text-muted label-muted mt-2">
-          <strong>Note:</strong> If you provide a <em>Check-In Time</em>, the entry will be saved as <b>Closed</b>.  
+          <strong>Note:</strong> If you provide a <em>Check-In Time</em>, the entry will be saved as <b>Closed</b>.
           If you leave Check-In empty, it will be saved as <b>Open</b>.
         </div>
       </div>
@@ -204,8 +204,19 @@
       el.value = now.toISOString().slice(0,16);
     }
 
-    // Prefill modal + summary
+    // ------- Modal instance (reused) + cleanup to avoid sticky backdrops -------
     const detailsModalEl = document.getElementById('detailsModal');
+    const getDetailsModal = () => bootstrap.Modal.getOrCreateInstance(detailsModalEl);
+
+    // Clean up any stray backdrops if there were multiple instances created earlier
+    detailsModalEl.addEventListener('hidden.bs.modal', () => {
+      // Defensive cleanup (usually not needed when using getOrCreateInstance)
+      document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+      document.body.classList.remove('modal-open');
+      document.body.style.removeProperty('padding-right');
+    });
+
+    // Prefill modal + summary
     detailsModalEl.addEventListener('show.bs.modal', () => {
       setNowLocal(document.getElementById('m_checkOutTime'));
       const n = document.getElementById('name').value || '—';
@@ -268,9 +279,8 @@
           roomNumber: data.roomNumber
         });
 
-        // Open modal immediately
-        const modal = new bootstrap.Modal(detailsModalEl);
-        modal.show();
+        // Open modal using a SINGLE instance (prevents stuck backdrops)
+        getDetailsModal().show();
       } catch (err) {
         showAlert('danger', `Failed to fetch details: ${err.message}`);
       } finally {
@@ -311,12 +321,16 @@
         const now = new Date();
         now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
         cin = now.toISOString().slice(0,16);
-        // document.getElementById('m_checkInTime').value = cin; // optional reflect
       }
 
       document.getElementById('f_checkInTime').value = cin;
       document.getElementById('f_checkInGate').value = ig;
 
+      // Hide modal BEFORE posting to avoid any lingering overlay during redirect
+      const inst = bootstrap.Modal.getInstance(detailsModalEl);
+      if (inst) inst.hide();
+
+      // Submit the hidden form
       document.getElementById('entryForm').submit();
     });
 
