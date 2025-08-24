@@ -41,13 +41,17 @@
     .badge-closed { background:#d1e7dd; color:#0f5132; }
     .btn-compact { padding: .2rem .5rem; font-size: .8rem; }
     @media (max-width: 600px) { .container { padding: 15px; } h1{ font-size: 2rem; font-weight: 300; } }
+
+    /* mini card for modal details */
+    .mini-card { background:#f8f9fa; border:1px solid #e9ecef; border-radius:12px; padding:12px 14px; }
+    .mini-card p { margin:0 0 6px; }
   </style>
 </head>
 
 <body>
   <div class="container">
     <h1 id="welcomemsg"></h1>
-    <a href="<%= process.env.BASE_URL %>/v1/admin/logout" class="logout-link">Logout</a>
+    <a href="<%= process.env.BASE_URL %>/new/admin/logout" class="logout-link">Logout</a>
 
     <h1>All Khokha Entries</h1>
 
@@ -155,7 +159,7 @@
     </table>
   </div>
 
-  <!-- DETAILS MODAL -->
+  <!-- DETAILS MODAL (row click) -->
   <div class="modal fade" id="detailsModal" tabindex="-1" aria-labelledby="detailsModalLabel" aria-hidden="true">
     <div class="modal-dialog"><div class="modal-content">
       <div class="modal-header">
@@ -164,6 +168,29 @@
       </div>
       <div class="modal-body" id="modalContent"></div>
     </div></div>
+  </div>
+
+  <!-- NEW: CONFIRM CLOSE MODAL -->
+  <div class="modal fade" id="confirmCloseModal" tabindex="-1" aria-labelledby="confirmCloseLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 id="confirmCloseLabel" class="modal-title">Confirm Close</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+            id="confirmCloseXBtn"></button>
+        </div>
+        <div class="modal-body">
+          <div id="confirmCloseContent" class="mini-card"></div>
+          <div id="confirmCloseNote" class="text-muted small mt-2"></div>
+          <div id="confirmCloseError" class="text-danger small mt-2 d-none"></div>
+          <div id="confirmCloseSuccess" class="text-success small mt-2 d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" id="confirmCloseCancel">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmCloseBtn" disabled>Confirm Close</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Welcome typer -->
@@ -179,7 +206,7 @@
     });
   </script>
 
-  <!-- DataTables server-side + filters + export + close-by-roll -->
+  <!-- DataTables server-side + filters + export + close-by-roll (modal-based) -->
   <script>
     const BASE_URL = '<%= BASE_URL %>';
     let table;
@@ -200,6 +227,122 @@
       ciFrom: document.getElementById('f-ci-from').value,
       ciTo:   document.getElementById('f-ci-to').value
     });
+
+    // Mini card renderer for modal
+    function renderEntryMiniCard(row) {
+      if (!row) return '<p class="mb-0">No data.</p>';
+      return `
+        <p><strong>${row.name || '—'}</strong> • Roll: <code>${row.rollNumber || '—'}</code></p>
+        <p class="mb-1">Outlook: ${row.outlookEmail || '—'}</p>
+        <p class="mb-1">Phone: ${row.phoneNumber || '—'}</p>
+        <p class="mb-1">Hostel: ${row.hostel || '—'} • Room: ${row.roomNumber || '—'}</p>
+        <p class="mb-1">Destination: ${row.destination || '—'}</p>
+        <p class="mb-1">Gate: Out ${row.checkOutGate || '—'} • In ${row.checkInGate || '—'}</p>
+        <p class="mb-0">Check-Out: ${row.checkOutTime ? new Date(row.checkOutTime).toLocaleString() : '—'}
+          • Check-In: ${row.checkInTime ? new Date(row.checkInTime).toLocaleString() : '—'}</p>
+      `;
+    }
+
+    // Quick fetch for a single open entry by roll using the same server table API
+    async function fetchOpenEntryByRoll(roll) {
+      const payload = {
+        draw: 1, start: 0, length: 1,
+        filters: { rollNumber: String(roll).trim(), status: 'Open' }
+      };
+      const resp = await fetch(`${BASE_URL}/entries/table`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!resp.ok) return null;
+      const json = await resp.json().catch(() => null);
+      if (!json || !Array.isArray(json.data)) return null;
+      return json.data[0] || null;
+    }
+
+    // ---------- Close-by-roll (modal flow) ----------
+    let pendingCloseRoll = null;
+    let pendingCloseRow  = null;
+    const confirmModalEl = document.getElementById('confirmCloseModal');
+    const confirmModal   = new bootstrap.Modal(confirmModalEl);
+    const confirmBtn     = document.getElementById('confirmCloseBtn');
+    const confirmContent = document.getElementById('confirmCloseContent');
+    const confirmNote    = document.getElementById('confirmCloseNote');
+    const confirmErr     = document.getElementById('confirmCloseError');
+    const confirmOk      = document.getElementById('confirmCloseSuccess');
+
+    function resetConfirmModal() {
+      confirmBtn.disabled = true;
+      confirmBtn.classList.remove('is-loading');
+      confirmContent.innerHTML = '';
+      confirmNote.textContent = '';
+      confirmErr.textContent = '';
+      confirmErr.classList.add('d-none');
+      confirmOk.textContent = '';
+      confirmOk.classList.add('d-none');
+    }
+
+    async function openCloseModalForRoll(roll, rowDataOptional) {
+      resetConfirmModal();
+      pendingCloseRoll = roll;
+      confirmNote.textContent = `You are about to close the open entry for roll ${roll}.`;
+
+      let row = rowDataOptional || null;
+      if (!row) {
+        // fetch from server if not provided
+        row = await fetchOpenEntryByRoll(roll);
+      }
+
+      if (!row) {
+        confirmContent.innerHTML = `<p class="mb-0">No open entry found for roll <strong>${roll}</strong>.</p>`;
+        confirmBtn.disabled = true;
+      } else {
+        pendingCloseRow = row;
+        confirmContent.innerHTML = renderEntryMiniCard(row);
+        confirmBtn.disabled = false;
+      }
+
+      confirmModal.show();
+    }
+
+    async function closeByRoll(roll) {
+      try {
+        confirmBtn.disabled = true;
+        confirmBtn.classList.add('is-loading');
+        confirmErr.classList.add('d-none');
+        confirmErr.textContent = '';
+
+        const resp = await fetch(`${BASE_URL}/entries/close-by-roll`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ rollNumber: roll, checkInGate: 'AUTO_CLOSED' })
+        });
+
+        // Show result in modal (no alerts)
+        if (!resp.ok) {
+          const t = await resp.text();
+          confirmBtn.classList.remove('is-loading');
+          confirmBtn.disabled = false;
+          confirmErr.textContent = t || 'Close failed.';
+          confirmErr.classList.remove('d-none');
+          return;
+        }
+
+        // Success
+        confirmOk.textContent = 'Entry closed successfully.';
+        confirmOk.classList.remove('d-none');
+
+        // Refresh table (keep page), then auto-close modal
+        $('#entriesTable').DataTable().ajax.reload(null, false);
+        setTimeout(() => { confirmModal.hide(); }, 900);
+      } catch (err) {
+        confirmBtn.classList.remove('is-loading');
+        confirmBtn.disabled = false;
+        confirmErr.textContent = 'Close failed.';
+        confirmErr.classList.remove('d-none');
+        console.error(err);
+      }
+    }
 
     $(document).ready(function () {
       table = $('#entriesTable').DataTable({
@@ -259,7 +402,7 @@
       // Periodic refresh
       setInterval(() => table.ajax.reload(null, false), 30000);
 
-      // Details modal
+      // Row click → existing details modal
       $('#entriesTable tbody').on('click', 'tr', function (e) {
         if (e.target && (e.target.classList.contains('btn-close-roll') || e.target.closest('.btn-close-roll'))) return;
         const row = table.row(this).data();
@@ -278,23 +421,29 @@
           <p><strong>Check-In:</strong> ${row.checkInTime ? new Date(row.checkInTime).toLocaleString() : '—'}</p>
         `;
         $('#modalContent').html(details);
-        $('#detailsModal').modal('show');
+        new bootstrap.Modal(document.getElementById('detailsModal')).show();
       });
 
-      // Row-level Close button
-      $('#entriesTable tbody').on('click', '.btn-close-roll', async function () {
+      // Row-level Close button → show confirm modal with that row's data
+      $('#entriesTable tbody').on('click', '.btn-close-roll', async function (e) {
+        e.stopPropagation();
         const roll = this.getAttribute('data-roll');
-        if (!roll) return;
-        if (!confirm(`Close open entry for roll ${roll}?`)) return;
-        await closeByRoll(roll);
+        const row  = table.row($(this).closest('tr')).data();
+        await openCloseModalForRoll(roll, row);
       });
 
-      // Topbar Close-by-roll
+      // Topbar Close-by-roll → fetch then show confirm modal
       document.getElementById('btn-close-by-roll').addEventListener('click', async () => {
         const roll = document.getElementById('close-roll-input').value.trim();
-        if (!roll) return alert('Enter a roll number.');
-        if (!confirm(`Close open entry for roll ${roll}?`)) return;
-        await closeByRoll(roll);
+        if (!roll) {
+          // show modal saying "enter a roll" (no alerts)
+          resetConfirmModal();
+          confirmContent.innerHTML = '<p class="mb-0">Please enter a roll number first.</p>';
+          confirmBtn.disabled = true;
+          confirmModal.show();
+          return;
+        }
+        await openCloseModalForRoll(roll);
       });
 
       // Export current FILTERED set (entire filtered dataset)
@@ -314,25 +463,11 @@
       $('#btn-export-csv').on('click',  () => postExport('csv'));
     });
 
-    async function closeByRoll(roll) {
-      try {
-        const resp = await fetch(`${BASE_URL}/entries/close-by-roll`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ rollNumber: roll, checkInGate: 'AUTO_CLOSED' })
-        });
-        if (!resp.ok) {
-          const t = await resp.text();
-          alert(t || 'Close failed.');
-          return;
-        }
-        $('#entriesTable').DataTable().ajax.reload(null, false);
-        alert(`Entry for roll ${roll} closed.`);
-      } catch (err) {
-        console.error(err);
-        alert('Close failed.');
-      }
-    }
+    // Confirm button in modal
+    document.getElementById('confirmCloseBtn').addEventListener('click', async () => {
+      if (!pendingCloseRoll) return;
+      await closeByRoll(pendingCloseRoll);
+    });
   </script>
 </body>
 </html>
