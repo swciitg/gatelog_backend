@@ -140,12 +140,18 @@ khokhaEntryRouter.post("/entries/table", async (req, res) => {
 
     // Date ranges
     const addRange = (field, from, to) => {
-      if (!from && !to) return;
-      const r = {};
-      if (from) r.$gte = new Date(from);
-      if (to)   r.$lte = new Date(to);
-      base[field] = r;
-    };
+  if (!from && !to) return;
+  const r = {};
+  if (from) {
+    const d = new Date(from);
+    r.$gte = field === 'checkOutTime' ? new Date(d.getTime() - 330 * 60 * 1000) : d; // -5h30m
+  }
+  if (to) {
+    const d = new Date(to);
+    r.$lte = field === 'checkOutTime' ? new Date(d.getTime() - 330 * 60 * 1000) : d; // -5h30m
+  }
+  base[field] = r;
+};
     addRange('checkOutTime', filters.coFrom, filters.coTo);
     addRange('checkInTime',  filters.ciFrom, filters.ciTo);
 
@@ -275,7 +281,7 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
       hostel,
       roomNumber,
       destination,
-      checkOutTime: checkOutTime ? new Date(checkOutTime) : undefined,
+      checkOutTime: checkOutTime ? new Date(new Date(checkOutTime).getTime() - 330 * 60 * 1000) : undefined,
       checkOutGate,
       checkInTime: checkInTimeDate,            // null if still open
       checkInGate: checkInGate || null,
@@ -384,12 +390,18 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
       if (filters.status === 'Closed') base.isClosed = true;
 
       const addRange = (field, from, to) => {
-        if (!from && !to) return;
-        const r = {};
-        if (from) r.$gte = new Date(from);
-        if (to)   r.$lte = new Date(to);
-        base[field] = r;
-      };
+  if (!from && !to) return;
+  const r = {};
+  if (from) {
+    const d = new Date(from);
+    r.$gte = field === 'checkOutTime' ? new Date(d.getTime() - 330 * 60 * 1000) : d; // -5h30m
+  }
+  if (to) {
+    const d = new Date(to);
+    r.$lte = field === 'checkOutTime' ? new Date(d.getTime() - 330 * 60 * 1000) : d; // -5h30m
+  }
+  base[field] = r;
+};
       addRange('checkOutTime', filters.coFrom, filters.coTo);
       addRange('checkInTime',  filters.ciFrom, filters.ciTo);
 
