@@ -275,7 +275,7 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
       hostel,
       roomNumber,
       destination,
-      checkOutTime: checkOutTime ? new Date(checkOutTime) : undefined,
+      checkOutTime: checkOutTime ? new Date(new Date(checkOutTime).getTime() - 330 * 60 * 1000) : undefined,
       checkOutGate,
       checkInTime: checkInTimeDate,            // null if still open
       checkInGate: checkInGate || null,
