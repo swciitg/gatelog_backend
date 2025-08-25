@@ -45,10 +45,75 @@
     /* mini card for modal details */
     .mini-card { background:#f8f9fa; border:1px solid #e9ecef; border-radius:12px; padding:12px 14px; }
     .mini-card p { margin:0 0 6px; }
+
+    /* Hide DataTables default "Processing..." */
+    div.dataTables_processing { display: none !important; }
+
+    /* Pretty loader overlay */
+    .loader-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(20,23,28,0.35);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 2000;
+      opacity: 0;
+      transition: opacity .2s ease;
+    }
+    .loader-overlay.hidden { display: none; }
+    .loader-overlay.visible { opacity: 1; }
+
+    .loader-card {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      min-width: 260px;
+      background: #ffffff;
+      color: #222;
+      border-radius: 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.18);
+    }
+    .spinner {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      border: 3px solid rgba(0,0,0,.12);
+      border-top-color: #0d6efd; /* Bootstrap primary */
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loader-text { font-weight: 600; letter-spacing: .2px; }
+
+    /* Optional: loading state for confirm button */
+    #confirmCloseBtn.is-loading {
+      position: relative;
+      pointer-events: none;
+      opacity: .85;
+    }
+    #confirmCloseBtn.is-loading::after {
+      content: "";
+      position: absolute;
+      right: 10px; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.4);
+      border-top-color: #fff;
+      animation: spin .9s linear infinite;
+    }
   </style>
 </head>
 
 <body>
+  <!-- Global Loader -->
+  <div id="appLoader" class="loader-overlay hidden" aria-hidden="true">
+    <div class="loader-card" role="status" aria-live="polite" aria-label="Loading">
+      <div class="spinner" aria-hidden="true"></div>
+      <div class="loader-text" id="loaderText">Loading…</div>
+    </div>
+  </div>
+
   <div class="container">
     <h1 id="welcomemsg"></h1>
     <a href="<%= process.env.BASE_URL %>/new/admin/logout" class="logout-link">Logout</a>
@@ -169,7 +234,7 @@
       <div class="modal-body" id="modalContent"></div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
-        <!-- This is the moved action -->
+        <!-- Close action lives here -->
         <button type="button" class="btn btn-danger d-none" id="detailsCloseBtn" data-roll="">Close Entry</button>
       </div>
     </div></div>
@@ -181,8 +246,7 @@
       <div class="modal-content">
         <div class="modal-header">
           <h5 id="confirmCloseLabel" class="modal-title">Confirm Close</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
-            id="confirmCloseXBtn"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="confirmCloseXBtn"></button>
         </div>
         <div class="modal-body">
           <div id="confirmCloseContent" class="mini-card"></div>
@@ -211,11 +275,28 @@
     });
   </script>
 
-  <!-- DataTables server-side + filters + export + close-from-modal -->
+  <!-- DataTables server-side + filters + export + close-from-modal + global loader -->
   <script>
     const BASE_URL = '<%= BASE_URL %>';
     let table;
-    let currentDetailsRow = null; // store the row currently shown in the details modal
+    let currentDetailsRow = null;
+
+    // ===== Loader helpers =====
+    const loaderEl = () => document.getElementById('appLoader');
+    const loaderTextEl = () => document.getElementById('loaderText');
+
+    function showLoader(text = 'Loading…') {
+      const overlay = loaderEl();
+      loaderTextEl().textContent = text;
+      overlay.classList.remove('hidden');
+      // allow paint, then fade-in
+      requestAnimationFrame(() => overlay.classList.add('visible'));
+    }
+    function hideLoader() {
+      const overlay = loaderEl();
+      overlay.classList.remove('visible');
+      setTimeout(() => overlay.classList.add('hidden'), 180);
+    }
 
     const collectFilters = () => ({
       name:   document.getElementById('f-name').value.trim(),
@@ -249,7 +330,7 @@
       `;
     }
 
-    // Fetch the open entry by roll (used by topbar close)
+    // Fetch open entry by roll
     async function fetchOpenEntryByRoll(roll) {
       const payload = { draw: 1, start: 0, length: 1, filters: { rollNumber: String(roll).trim(), status: 'Open' } };
       const resp = await fetch(`${BASE_URL}/entries/table`, {
@@ -289,10 +370,12 @@
       pendingCloseRoll = roll;
       confirmNote.textContent = `You are about to close the open entry for roll ${roll}.`;
 
+      showLoader('Fetching entry…');
       let row = rowDataOptional || null;
       if (!row) {
         row = await fetchOpenEntryByRoll(roll);
       }
+      hideLoader();
 
       if (!row) {
         confirmContent.innerHTML = `<p class="mb-0">No open entry found for roll <strong>${roll}</strong>.</p>`;
@@ -302,7 +385,6 @@
         confirmContent.innerHTML = renderEntryMiniCard(row);
         confirmBtn.disabled = false;
       }
-
       confirmModal.show();
     }
 
@@ -313,11 +395,13 @@
         confirmErr.classList.add('d-none');
         confirmErr.textContent = '';
 
+        showLoader('Closing entry…');
         const resp = await fetch(`${BASE_URL}/entries/close-by-roll`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ rollNumber: roll, checkInGate: 'AUTO_CLOSED' })
         });
+        hideLoader();
 
         if (!resp.ok) {
           const t = await resp.text();
@@ -341,6 +425,7 @@
           if (detailsInst) detailsInst.hide();
         }, 900);
       } catch (err) {
+        hideLoader();
         confirmBtn.classList.remove('is-loading');
         confirmBtn.disabled = false;
         confirmErr.textContent = 'Close failed.';
@@ -349,10 +434,28 @@
       }
     }
 
+    // ===== DataTable + loader wiring =====
+    let initialDrawDone = false;
+    let userTriggeredLoad = false; // only show loader on user actions
+
     $(document).ready(function () {
-      table = $('#entriesTable').DataTable({
+      const $tableEl = $('#entriesTable');
+
+      // Hook loader to DT events (before init is fine)
+      $tableEl.on('preXhr.dt', function () {
+        if (!initialDrawDone || userTriggeredLoad) {
+          showLoader('Loading entries…');
+        }
+      });
+      $tableEl.on('xhr.dt error.dt', function () {
+        hideLoader();
+        initialDrawDone = true;
+        userTriggeredLoad = false;
+      });
+
+      table = $tableEl.DataTable({
         serverSide: true,
-        processing: true,
+        processing: true,      // built-in hidden via CSS; we use our own overlay
         responsive: true,
         deferRender: true,
         pageLength: 25,
@@ -386,29 +489,28 @@
                <div><strong>In:</strong> ${row.checkInGate || '—'}</div>` },
           { data: 'checkOutTime', render: (iso) => iso ? new Date(iso).toLocaleString() : '—' },
           { data: 'checkInTime',  render: (iso) => iso ? new Date(iso).toLocaleString()  : '—' },
-          // Actions column now has no button—action moved to the modal
           { data: null, orderable: false, searchable: false, render: () => '<span class="text-muted">—</span>' }
         ]
       });
 
-      // Any filter change → reload current page
-      $('#f-name,#f-roll,#f-outlook,#f-phone,#f-room').on('input',  () => table.ajax.reload(null, true));
+      // Any filter change → reload (user-triggered)
+      $('#f-name,#f-roll,#f-outlook,#f-phone,#f-room').on('input',  () => { userTriggeredLoad = true; table.ajax.reload(null, true); });
       $('#f-dest,#f-hostel,#f-status,#f-outgate,#f-ingate,#f-co-from,#f-co-to,#f-ci-from,#f-ci-to')
-        .on('change', () => table.ajax.reload(null, true));
+        .on('change', () => { userTriggeredLoad = true; table.ajax.reload(null, true); });
 
       $('#f-reset').on('click', function(){
         $('#f-name,#f-roll,#f-outlook,#f-phone,#f-room').val('');
         $('#f-dest,#f-hostel,#f-status,#f-outgate,#f-ingate').val('');
         $('#f-co-from,#f-co-to,#f-ci-from,#f-ci-to').val('');
+        userTriggeredLoad = true;
         table.ajax.reload(null, true);
       });
 
-      // Periodic refresh
+      // Periodic refresh (silent)
       setInterval(() => table.ajax.reload(null, false), 30000);
 
       // Row click → open details modal (Close button is inside this modal)
-      $('#entriesTable tbody').on('click', 'tr', function (e) {
-        // ignore clicks coming from any future in-row action; currently none
+      $('#entriesTable tbody').on('click', 'tr', function () {
         const row = table.row(this).data();
         if (!row) return;
 
@@ -453,7 +555,7 @@
         await openCloseModalForRoll(roll);
       });
 
-      // Export current FILTERED set (entire filtered dataset)
+      // Export (optional small loader flash)
       const postExport = (format) => {
         const f = collectFilters();
         const form = document.createElement('form');
@@ -463,6 +565,8 @@
         add('filters', JSON.stringify(f));
         add('format', format); // 'xlsx' or 'csv'
         document.body.appendChild(form);
+        showLoader('Preparing export…');
+        setTimeout(hideLoader, 1500);
         form.submit();
         form.remove();
       };
