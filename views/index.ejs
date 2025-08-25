@@ -167,10 +167,15 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body" id="modalContent"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+        <!-- This is the moved action -->
+        <button type="button" class="btn btn-danger d-none" id="detailsCloseBtn" data-roll="">Close Entry</button>
+      </div>
     </div></div>
   </div>
 
-  <!-- NEW: CONFIRM CLOSE MODAL -->
+  <!-- CONFIRM CLOSE MODAL -->
   <div class="modal fade" id="confirmCloseModal" tabindex="-1" aria-labelledby="confirmCloseLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -206,10 +211,11 @@
     });
   </script>
 
-  <!-- DataTables server-side + filters + export + close-by-roll (modal-based) -->
+  <!-- DataTables server-side + filters + export + close-from-modal -->
   <script>
     const BASE_URL = '<%= BASE_URL %>';
     let table;
+    let currentDetailsRow = null; // store the row currently shown in the details modal
 
     const collectFilters = () => ({
       name:   document.getElementById('f-name').value.trim(),
@@ -228,7 +234,7 @@
       ciTo:   document.getElementById('f-ci-to').value
     });
 
-    // Mini card renderer for modal
+    // Mini card renderer for confirm modal
     function renderEntryMiniCard(row) {
       if (!row) return '<p class="mb-0">No data.</p>';
       return `
@@ -243,15 +249,11 @@
       `;
     }
 
-    // Quick fetch for a single open entry by roll using the same server table API
+    // Fetch the open entry by roll (used by topbar close)
     async function fetchOpenEntryByRoll(roll) {
-      const payload = {
-        draw: 1, start: 0, length: 1,
-        filters: { rollNumber: String(roll).trim(), status: 'Open' }
-      };
+      const payload = { draw: 1, start: 0, length: 1, filters: { rollNumber: String(roll).trim(), status: 'Open' } };
       const resp = await fetch(`${BASE_URL}/entries/table`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (!resp.ok) return null;
@@ -289,7 +291,6 @@
 
       let row = rowDataOptional || null;
       if (!row) {
-        // fetch from server if not provided
         row = await fetchOpenEntryByRoll(roll);
       }
 
@@ -318,7 +319,6 @@
           body: JSON.stringify({ rollNumber: roll, checkInGate: 'AUTO_CLOSED' })
         });
 
-        // Show result in modal (no alerts)
         if (!resp.ok) {
           const t = await resp.text();
           confirmBtn.classList.remove('is-loading');
@@ -328,13 +328,18 @@
           return;
         }
 
-        // Success
         confirmOk.textContent = 'Entry closed successfully.';
         confirmOk.classList.remove('d-none');
 
-        // Refresh table (keep page), then auto-close modal
+        // Refresh table, then hide both modals
         $('#entriesTable').DataTable().ajax.reload(null, false);
-        setTimeout(() => { confirmModal.hide(); }, 900);
+
+        setTimeout(() => {
+          confirmModal.hide();
+          const detailsEl = document.getElementById('detailsModal');
+          const detailsInst = bootstrap.Modal.getInstance(detailsEl);
+          if (detailsInst) detailsInst.hide();
+        }, 900);
       } catch (err) {
         confirmBtn.classList.remove('is-loading');
         confirmBtn.disabled = false;
@@ -381,9 +386,8 @@
                <div><strong>In:</strong> ${row.checkInGate || '—'}</div>` },
           { data: 'checkOutTime', render: (iso) => iso ? new Date(iso).toLocaleString() : '—' },
           { data: 'checkInTime',  render: (iso) => iso ? new Date(iso).toLocaleString()  : '—' },
-          { data: null, orderable: false, searchable: false, render: (row) => row.isClosed
-              ? '<span class="text-muted">—</span>'
-              : `<button class="btn btn-sm btn-danger btn-compact btn-close-roll" data-roll="${row.rollNumber}">Close</button>` }
+          // Actions column now has no button—action moved to the modal
+          { data: null, orderable: false, searchable: false, render: () => '<span class="text-muted">—</span>' }
         ]
       });
 
@@ -402,12 +406,15 @@
       // Periodic refresh
       setInterval(() => table.ajax.reload(null, false), 30000);
 
-      // Row click → existing details modal
+      // Row click → open details modal (Close button is inside this modal)
       $('#entriesTable tbody').on('click', 'tr', function (e) {
-        if (e.target && (e.target.classList.contains('btn-close-roll') || e.target.closest('.btn-close-roll'))) return;
+        // ignore clicks coming from any future in-row action; currently none
         const row = table.row(this).data();
         if (!row) return;
-        const details = `
+
+        currentDetailsRow = row;
+
+        const detailsHtml = `
           <p><strong>Name:</strong> ${row.name}</p>
           <p><strong>Roll No:</strong> ${row.rollNumber}</p>
           <p><strong>Outlook:</strong> ${row.outlookEmail}</p>
@@ -420,23 +427,23 @@
           <p><strong>Check-Out:</strong> ${row.checkOutTime ? new Date(row.checkOutTime).toLocaleString() : '—'}</p>
           <p><strong>Check-In:</strong> ${row.checkInTime ? new Date(row.checkInTime).toLocaleString() : '—'}</p>
         `;
-        $('#modalContent').html(details);
-        new bootstrap.Modal(document.getElementById('detailsModal')).show();
-      });
+        $('#modalContent').html(detailsHtml);
 
-      // Row-level Close button → show confirm modal with that row's data
-      $('#entriesTable tbody').on('click', '.btn-close-roll', async function (e) {
-        e.stopPropagation();
-        const roll = this.getAttribute('data-roll');
-        const row  = table.row($(this).closest('tr')).data();
-        await openCloseModalForRoll(roll, row);
+        const btn = document.getElementById('detailsCloseBtn');
+        btn.dataset.roll = row.rollNumber || '';
+        if (row.isClosed) {
+          btn.classList.add('d-none');
+        } else {
+          btn.classList.remove('d-none');
+        }
+
+        new bootstrap.Modal(document.getElementById('detailsModal')).show();
       });
 
       // Topbar Close-by-roll → fetch then show confirm modal
       document.getElementById('btn-close-by-roll').addEventListener('click', async () => {
         const roll = document.getElementById('close-roll-input').value.trim();
         if (!roll) {
-          // show modal saying "enter a roll" (no alerts)
           resetConfirmModal();
           confirmContent.innerHTML = '<p class="mb-0">Please enter a roll number first.</p>';
           confirmBtn.disabled = true;
@@ -453,8 +460,8 @@
         form.method = 'POST';
         form.action = `${BASE_URL}/entries/export`;
         const add = (k,v) => { const i=document.createElement('input'); i.type='hidden'; i.name=k; i.value=v; form.appendChild(i); };
-        add('filters', JSON.stringify(f)); // send filters verbatim
-        add('format', format);             // 'xlsx' or 'csv'
+        add('filters', JSON.stringify(f));
+        add('format', format); // 'xlsx' or 'csv'
         document.body.appendChild(form);
         form.submit();
         form.remove();
@@ -463,7 +470,14 @@
       $('#btn-export-csv').on('click',  () => postExport('csv'));
     });
 
-    // Confirm button in modal
+    // Click "Close Entry" inside the details modal → open confirm modal
+    document.getElementById('detailsCloseBtn').addEventListener('click', async (e) => {
+      const roll = e.currentTarget.dataset.roll;
+      if (!roll) return;
+      await openCloseModalForRoll(roll, currentDetailsRow);
+    });
+
+    // Confirm button in confirm modal
     document.getElementById('confirmCloseBtn').addEventListener('click', async () => {
       if (!pendingCloseRoll) return;
       await closeByRoll(pendingCloseRoll);
