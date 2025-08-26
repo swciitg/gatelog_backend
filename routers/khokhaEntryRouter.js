@@ -297,7 +297,7 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
     await doc.validate();
     await doc.save();
 
-    res.redirect(`${req.app.locals.BASE_URL}/entries`);
+    res.redirect(`${req.app.locals.BASE_URL}/new/admin`);
   } catch (err) {
     console.error("Create entry error:", err);
     if (err.name === 'ValidationError') {
