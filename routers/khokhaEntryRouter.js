@@ -297,7 +297,7 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
     await doc.validate();
     await doc.save();
 
-    res.redirect(`${req.app.locals.BASE_URL}/entries`);
+    res.redirect(`${req.app.locals.BASE_URL}/new/admin`);
   } catch (err) {
     console.error("Create entry error:", err);
     if (err.name === 'ValidationError') {
@@ -341,15 +341,15 @@ khokhaEntryRouter.post("/entries/close-by-roll", async (req, res) => {
 });
 
 /* -------------------- EXPORT + PREVIEW -------------------- */
-khokhaEntryRouter.get("/entries/export", (req, res) => {
-  try {
-    const hostels = Object.values(Hostels || {});
-    res.render("export-entries", { BASE_URL: req.app.locals.BASE_URL, hostels });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
-  }
-});
+// khokhaEntryRouter.get("/entries/export", (req, res) => {
+//   try {
+//     const hostels = Object.values(Hostels || {});
+//     res.render("export-entries", { BASE_URL: req.app.locals.BASE_URL, hostels });
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
 
 // UPDATED: export current filtered set (same query semantics as /entries/table)
 khokhaEntryRouter.post("/entries/export", async (req, res) => {
