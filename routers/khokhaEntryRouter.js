@@ -91,12 +91,15 @@ khokhaEntryRouter.get("/history",
   asyncErrorHandler(khokhaHistoryController.userHistory)
 );
 
-khokhaEntryRouter.get("/entries", (req, res) => {
-  res.render("index", {
-    user: req.session.user,
-    BASE_URL: req.app.locals.BASE_URL
-  });
-});
+// khokhaEntryRouter.get("/entries", (req, res) => {
+//   if (!req.session.user) {
+//         return res.redirect(process.env.BASE_URL +'/new/admin/login');
+//     }
+//   res.render("index", {
+//     user: req.session.user,
+//     BASE_URL: req.app.locals.BASE_URL
+//   });
+// });
 
 khokhaEntryRouter.post("/entries/table", async (req, res) => {
   try {
@@ -240,7 +243,10 @@ khokhaEntryRouter.get("/entries/api", async (req, res) => {
   }
 });
 
-khokhaEntryRouter.get("/entries/new", (req, res) => {
+khokhaEntryRouter.get("/new/entries", (req, res) => {
+  if (!req.session.user) {
+        return res.redirect(process.env.BASE_URL +'/new/admin/login');
+    }
   res.render("add-entry", { BASE_URL: req.app.locals.BASE_URL });
 });
 
