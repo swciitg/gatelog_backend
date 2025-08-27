@@ -252,6 +252,9 @@ khokhaEntryRouter.get("/new/entries", (req, res) => {
 
 /* -------------------- AUTO-CLOSE & CREATE NEW -------------------- */
 khokhaEntryRouter.post("/entries", async (req, res, next) => {
+    if (!req.session.user) {
+        return res.redirect(process.env.BASE_URL +'/new/admin/login');
+    }
   try {
     const {
       name, rollNumber, outlookEmail, phoneNumber, hostel, roomNumber,
@@ -309,6 +312,9 @@ khokhaEntryRouter.post("/entries", async (req, res, next) => {
 
 /* -------------------- CLOSE OPEN ENTRY BY ROLL (no admin key) -------------------- */
 khokhaEntryRouter.post("/entries/close-by-roll", async (req, res) => {
+    if (!req.session.user) {
+        return res.redirect(process.env.BASE_URL +'/new/admin/login');
+    }
   try {
     const { rollNumber, checkInGate, checkInTime } = req.body || {};
     if (!rollNumber) return res.status(400).send("rollNumber is required");
