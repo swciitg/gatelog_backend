@@ -141,20 +141,22 @@ khokhaEntryRouter.post("/entries/table", async (req, res) => {
     if (filters.status === 'Open')   base.isClosed = false;
     if (filters.status === 'Closed') base.isClosed = true;
 
-    // Date ranges
+    // Date ranges (apply -5h30m for BOTH checkOutTime & checkInTime)
+    const OFFSET = 330 * 60 * 1000;
+    const needsOffset = (field) => field === 'checkOutTime' || field === 'checkInTime';
     const addRange = (field, from, to) => {
-  if (!from && !to) return;
-  const r = {};
-  if (from) {
-    const d = new Date(from);
-    r.$gte = field === 'checkOutTime' ? new Date(d.getTime() - 330 * 60 * 1000) : d; // -5h30m
-  }
-  if (to) {
-    const d = new Date(to);
-    r.$lte = field === 'checkOutTime' ? new Date(d.getTime() - 330 * 60 * 1000) : d; // -5h30m
-  }
-  base[field] = r;
-};
+      if (!from && !to) return;
+      const r = {};
+      if (from) {
+        const d = new Date(from);
+        r.$gte = needsOffset(field) ? new Date(d.getTime() - OFFSET) : d;
+      }
+      if (to) {
+        const d = new Date(to);
+        r.$lte = needsOffset(field) ? new Date(d.getTime() - OFFSET) : d;
+      }
+      base[field] = r;
+    };
     addRange('checkOutTime', filters.coFrom, filters.coTo);
     addRange('checkInTime',  filters.ciFrom, filters.ciTo);
 
@@ -401,19 +403,22 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
       if (filters.status === 'Open')   base.isClosed = false;
       if (filters.status === 'Closed') base.isClosed = true;
 
+      // Date ranges (apply -5h30m for BOTH checkOutTime & checkInTime)
+      const OFFSET = 330 * 60 * 1000;
+      const needsOffset = (field) => field === 'checkOutTime' || field === 'checkInTime';
       const addRange = (field, from, to) => {
-  if (!from && !to) return;
-  const r = {};
-  if (from) {
-    const d = new Date(from);
-    r.$gte = field === 'checkOutTime' ? new Date(d.getTime() - 330 * 60 * 1000) : d; // -5h30m
-  }
-  if (to) {
-    const d = new Date(to);
-    r.$lte = field === 'checkOutTime' ? new Date(d.getTime() - 330 * 60 * 1000) : d; // -5h30m
-  }
-  base[field] = r;
-};
+        if (!from && !to) return;
+        const r = {};
+        if (from) {
+          const d = new Date(from);
+          r.$gte = needsOffset(field) ? new Date(d.getTime() - OFFSET) : d;
+        }
+        if (to) {
+          const d = new Date(to);
+          r.$lte = needsOffset(field) ? new Date(d.getTime() - OFFSET) : d;
+        }
+        base[field] = r;
+      };
       addRange('checkOutTime', filters.coFrom, filters.coTo);
       addRange('checkInTime',  filters.ciFrom, filters.ciTo);
 
@@ -482,7 +487,14 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
     const fromDate = new Date(from);
     const toDate = new Date(to);
     if (isNaN(fromDate) || isNaN(toDate)) return res.status(400).send('Invalid date format.');
-    q[dateField] = { $gte: fromDate, $lte: toDate };
+
+    // Apply -5h30m shift if the chosen dateField is checkOutTime or checkInTime
+    const OFFSET = 330 * 60 * 1000;
+    const shiftNeeded = (dateField === 'checkOutTime' || dateField === 'checkInTime');
+    const fromAdj = shiftNeeded ? new Date(fromDate.getTime() - OFFSET) : fromDate;
+    const toAdj   = shiftNeeded ? new Date(toDate.getTime() - OFFSET)   : toDate;
+
+    q[dateField] = { $gte: fromAdj, $lte: toAdj };
 
     if (name)        q.name = { $regex: name, $options: 'i' };
     if (rollNumber)  q.rollNumber = rollNumber;
@@ -543,9 +555,19 @@ function buildFilter(body) {
 
   const q = {};
   if (from || to) {
+    // Apply -5h30m when filtering by checkOutTime or checkInTime
+    const OFFSET = 330 * 60 * 1000;
+    const shiftNeeded = (dateField === 'checkOutTime' || dateField === 'checkInTime');
+
     const range = {};
-    if (from) range.$gte = new Date(from);
-    if (to)   range.$lte = new Date(to);
+    if (from) {
+      const d = new Date(from);
+      range.$gte = shiftNeeded ? new Date(d.getTime() - OFFSET) : d;
+    }
+    if (to) {
+      const d = new Date(to);
+      range.$lte = shiftNeeded ? new Date(d.getTime() - OFFSET) : d;
+    }
     q[dateField] = range;
   }
   if (name)         q.name = { $regex: name, $options: "i" };
