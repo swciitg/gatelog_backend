@@ -59,6 +59,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 //     res.redirect(`${adminJs.options.rootPath}/resources/KhokhaEntryModel`);
 // });
 app.use(process.env.BASE_URL  + '/new/admin', authRoutes);
+app.get((process.env.BASE_URL ) + '/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    service:  'GateLog APIs',
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+    version: '2.0.0'
+  });
+});
+
 
 app.use(process.env.BASE_URL, khokhaEntryRouter);
 app.locals.BASE_URL = process.env.BASE_URL;
