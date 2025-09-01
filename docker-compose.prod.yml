@@ -12,6 +12,7 @@ services:
       - .env.prod
     networks:
       - one-stop-2021_default
+    restart: always
 
 networks:
   one-stop-2021_default:
