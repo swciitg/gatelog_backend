@@ -84,15 +84,12 @@
           <input type="hidden" name="destination" id="f_destination">
           <input type="hidden" name="checkOutTime" id="f_checkOutTime">
           <input type="hidden" name="checkOutGate" id="f_checkOutGate">
-          <input type="hidden" name="checkInTime" id="f_checkInTime">
-          <input type="hidden" name="checkInGate" id="f_checkInGate">
-          <!-- REMOVED: isClosed hidden input -->
+          <!-- REMOVED: f_checkInTime & f_checkInGate -->
         </form>
 
         <!-- Hint -->
         <div class="text-muted label-muted mt-2">
-          <strong>Note:</strong> If you provide a <em>Check-In Time</em>, the entry will be saved as <b>Closed</b>.
-          If you leave Check-In empty, it will be saved as <b>Open</b>.
+          <strong>Note:</strong> New entries are created as <b>Open</b>. You can close them later when the student returns.
         </div>
       </div>
     </div>
@@ -112,15 +109,19 @@
 
         <div class="modal-body">
           <div class="row g-3">
-            <!-- DESTINATION: restricted to 3 options -->
+            <!-- DESTINATION: button-style radios -->
             <div class="col-12">
-              <label class="form-label">Destination</label>
-              <select id="m_destination" class="form-select" required>
-                <option value="" selected disabled>Select destination</option>
-                <option value="City">City</option>
-                <option value="Khoka">Khoka</option>
-                <option value="Other">Other</option>
-              </select>
+              <label class="form-label d-block">Destination</label>
+              <div class="btn-group" role="group" aria-label="Destination">
+                <input class="btn-check" type="radio" name="m_destination" id="dest_city" value="City" required>
+                <label class="btn btn-outline-primary" for="dest_city">City</label>
+
+                <input class="btn-check" type="radio" name="m_destination" id="dest_khoka" value="Khoka">
+                <label class="btn btn-outline-primary" for="dest_khoka">Khoka</label>
+
+                <input class="btn-check" type="radio" name="m_destination" id="dest_other" value="Other">
+                <label class="btn btn-outline-primary" for="dest_other">Other</label>
+              </div>
             </div>
 
             <div class="col-md-6">
@@ -136,43 +137,17 @@
                   <label class="form-check-label" for="m_cg_main">Main_Gate</label>
                 </div>
                 <div class="form-check">
-                  <input class="form-check-input" type="radio" name="m_checkOutGate" id="m_cg_kv" value="KV_Gate" required>
+                  <input class="form-check-input" type="radio" name="m_checkOutGate" id="m_cg_kv" value="KV_Gate">
                   <label class="form-check-label" for="m_cg_kv">KV_Gate</label>
                 </div>
                 <div class="form-check">
-                  <input class="form-check-input" type="radio" name="m_checkOutGate" id="m_cg_khoka" value="Khoka_Gate" required>
+                  <input class="form-check-input" type="radio" name="m_checkOutGate" id="m_cg_khoka" value="Khoka_Gate">
                   <label class="form-check-label" for="m_cg_khoka">Khoka_Gate</label>
                 </div>
               </div>
             </div>
 
-            <div class="col-md-6">
-              <label class="form-label">Check-In Time (optional)</label>
-              <input id="m_checkInTime" type="datetime-local" class="form-control">
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label d-block">Check-In Gate (optional)</label>
-              <div class="gate-group d-flex flex-wrap">
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="m_checkInGate" id="m_ig_main" value="Main_Gate">
-                  <label class="form-check-label" for="m_ig_main">Main_Gate</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="m_checkInGate" id="m_ig_kv" value="KV_Gate">
-                  <label class="form-check-label" for="m_ig_kv">KV_Gate</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="m_checkInGate" id="m_ig_khoka" value="Khoka_Gate">
-                  <label class="form-check-label" for="m_ig_khoka">Khoka_Gate</label>
-                </div>
-                <div class="form-check">
-                  <input class="form-check-input" type="radio" name="m_checkInGate" id="m_ig_auto" value="AUTO_CLOSED">
-                  <label class="form-check-label" for="m_ig_auto">AUTO_CLOSED</label>
-                </div>
-              </div>
-            </div>
-            <!-- REMOVED the "Mark as Closed" checkbox -->
+            <!-- REMOVED: Check-In Time + Check-In Gate -->
           </div>
         </div>
 
@@ -208,9 +183,7 @@
     const detailsModalEl = document.getElementById('detailsModal');
     const getDetailsModal = () => bootstrap.Modal.getOrCreateInstance(detailsModalEl);
 
-    // Clean up any stray backdrops if there were multiple instances created earlier
     detailsModalEl.addEventListener('hidden.bs.modal', () => {
-      // Defensive cleanup (usually not needed when using getOrCreateInstance)
       document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
       document.body.classList.remove('modal-open');
       document.body.style.removeProperty('padding-right');
@@ -223,7 +196,8 @@
       const r = document.getElementById('rollNumber').value || '—';
       const e = document.getElementById('outlookEmail').value || '—';
       document.getElementById('modalSummary').textContent = `Submitting for ${n} (${r}) • ${e}`;
-      document.getElementById('m_destination').focus();
+      // focus first destination button label for easy selection
+      document.querySelector('label[for="dest_city"]').focus();
     });
 
     // Hidden form setters
@@ -279,7 +253,7 @@
           roomNumber: data.roomNumber
         });
 
-        // Open modal using a SINGLE instance (prevents stuck backdrops)
+        // Open modal
         getDetailsModal().show();
       } catch (err) {
         showAlert('danger', `Failed to fetch details: ${err.message}`);
@@ -300,37 +274,23 @@
 
     // ----- SUBMIT from modal -----
     document.getElementById('modalSubmitBtn').addEventListener('click', () => {
-      const dest = document.getElementById('m_destination').value; // SELECT value (City/Khoka/Other)
+      const destNode = document.querySelector('input[name="m_destination"]:checked');
       const cout = document.getElementById('m_checkOutTime').value;
       const cg = document.querySelector('input[name="m_checkOutGate"]:checked');
 
-      if (!dest) return showAlert('warning', 'Destination is required.');
+      if (!destNode) return showAlert('warning', 'Please choose a destination.');
       if (!cout) return showAlert('warning', 'Check-Out Time is required.');
       if (!cg)   return showAlert('warning', 'Please select an Exit Gate.');
 
-      document.getElementById('f_destination').value = dest;
+      document.getElementById('f_destination').value = destNode.value;
       document.getElementById('f_checkOutTime').value = cout;
       document.getElementById('f_checkOutGate').value = cg.value;
 
-      const igNode = document.querySelector('input[name="m_checkInGate"]:checked');
-      const ig = igNode ? igNode.value : '';
-      let cin = document.getElementById('m_checkInTime').value || '';
-
-      // If In Gate chosen but no Check-In Time, auto-fill now (local)
-      if (ig && !cin) {
-        const now = new Date();
-        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-        cin = now.toISOString().slice(0,16);
-      }
-
-      document.getElementById('f_checkInTime').value = cin;
-      document.getElementById('f_checkInGate').value = ig;
-
-      // Hide modal BEFORE posting to avoid any lingering overlay during redirect
+      // Hide modal BEFORE posting to avoid overlay during redirect
       const inst = bootstrap.Modal.getInstance(detailsModalEl);
       if (inst) inst.hide();
 
-      // Submit the hidden form
+      // Submit the hidden form (no check-in fields anymore)
       document.getElementById('entryForm').submit();
     });
 
