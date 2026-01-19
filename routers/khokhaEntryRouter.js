@@ -16,6 +16,14 @@ const escapeRegex = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const GATELOG_SECRET_KEY = process.env.GATELOG_SECRET_KEY;
 const ONESTOP_LOOKUP_URL = process.env.ONESTOP_LOOKUP_URL;
 
+const IST_OFFSET_MS = 330 * 60 * 1000;
+const toISTISOString = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (isNaN(date)) return '';
+  return new Date(date.getTime() + IST_OFFSET_MS).toISOString();
+};
+
 function hmacHex(rollNo) {
   return crypto.createHmac("sha256", GATELOG_SECRET_KEY)
     .update(String(rollNo), "utf8")
@@ -198,10 +206,9 @@ khokhaEntryRouter.post("/entries/table", async (req, res) => {
       isClosed:     !!d.isClosed,
       checkOutGate: d.checkOutGate || '',
       checkInGate:  d.checkInGate || '',
-      checkOutTime: d.checkOutTime ? new Date(d.checkOutTime).toISOString() : '',
-      checkInTime:  d.checkInTime ? new Date(d.checkInTime).toISOString() : '',
-      updatedAtISO: d.updatedAt ? new Date(d.updatedAt).toISOString()
-                                : (d.createdAt ? new Date(d.createdAt).toISOString() : '')
+      checkOutTime: toISTISOString(d.checkOutTime),
+      checkInTime:  toISTISOString(d.checkInTime),
+      updatedAtISO: toISTISOString(d.updatedAt) || toISTISOString(d.createdAt)
     }));
 
     res.json({ draw, recordsTotal, recordsFiltered, data });
@@ -403,15 +410,19 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
       if (filters.status === 'Open')   base.isClosed = false;
       if (filters.status === 'Closed') base.isClosed = true;
 
-      // Date ranges use submitted timestamps as-is
+      // Date ranges (apply -5h30m for BOTH checkOutTime & checkInTime)
+      const OFFSET = 330 * 60 * 1000;
+      const needsOffset = (field) => field === 'checkOutTime' || field === 'checkInTime';
       const addRange = (field, from, to) => {
         if (!from && !to) return;
         const r = {};
         if (from) {
-          r.$gte = new Date(from);
+          const d = new Date(from);
+          r.$gte = needsOffset(field) ? new Date(d.getTime() - OFFSET) : d;
         }
         if (to) {
-          r.$lte = new Date(to);
+          const d = new Date(to);
+          r.$lte = needsOffset(field) ? new Date(d.getTime() - OFFSET) : d;
         }
         base[field] = r;
       };
@@ -444,12 +455,12 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
         RoomNumber: d.roomNumber,
         Destination: d.destination,
         CheckOutGate: d.checkOutGate,
-        CheckOutTime: d.checkOutTime ? new Date(d.checkOutTime).toISOString() : '',
+        CheckOutTime: toISTISOString(d.checkOutTime),
         CheckInGate: d.checkInGate || '',
-        CheckInTime: d.checkInTime ? new Date(d.checkInTime).toISOString() : '',
+        CheckInTime: toISTISOString(d.checkInTime),
         Status: d.isClosed ? 'Closed' : 'Open',
-        CreatedAt: d.createdAt ? new Date(d.createdAt).toISOString() : '',
-        UpdatedAt: d.updatedAt ? new Date(d.updatedAt).toISOString() : '',
+        CreatedAt: toISTISOString(d.createdAt),
+        UpdatedAt: toISTISOString(d.updatedAt),
         _id: d._id?.toString() || ''
       }));
 
@@ -484,7 +495,13 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
     const toDate = new Date(to);
     if (isNaN(fromDate) || isNaN(toDate)) return res.status(400).send('Invalid date format.');
 
-    q[dateField] = { $gte: fromDate, $lte: toDate };
+    // Apply -5h30m shift if the chosen dateField is checkOutTime or checkInTime
+    const OFFSET = 330 * 60 * 1000;
+    const shiftNeeded = (dateField === 'checkOutTime' || dateField === 'checkInTime');
+    const fromAdj = shiftNeeded ? new Date(fromDate.getTime() - OFFSET) : fromDate;
+    const toAdj   = shiftNeeded ? new Date(toDate.getTime() - OFFSET)   : toDate;
+
+    q[dateField] = { $gte: fromAdj, $lte: toAdj };
 
     if (name)        q.name = { $regex: name, $options: 'i' };
     if (rollNumber)  q.rollNumber = rollNumber;
@@ -507,12 +524,12 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
       RoomNumber: d.roomNumber,
       Destination: d.destination,
       CheckOutGate: d.checkOutGate,
-      CheckOutTime: d.checkOutTime ? new Date(d.checkOutTime).toISOString() : '',
+      CheckOutTime: toISTISOString(d.checkOutTime),
       CheckInGate: d.checkInGate || '',
-      CheckInTime: d.checkInTime ? new Date(d.checkInTime).toISOString() : '',
+      CheckInTime: toISTISOString(d.checkInTime),
       Status: d.isClosed ? 'Closed' : 'Open',
-      CreatedAt: d.createdAt ? new Date(d.createdAt).toISOString() : '',
-      UpdatedAt: d.updatedAt ? new Date(d.updatedAt).toISOString() : '',
+      CreatedAt: toISTISOString(d.createdAt),
+      UpdatedAt: toISTISOString(d.updatedAt),
       _id: d._id?.toString() || ''
     }));
 
@@ -580,7 +597,7 @@ khokhaEntryRouter.post("/entries/export/preview", async (req, res) => {
     const limit = Math.min(Math.max(parseInt(req.body.limit || "25", 10), 1), 200);
     const skip  = (page - 1) * limit;
 
-    const [total, results] = await Promise.all([
+    const [total, docs] = await Promise.all([
       KhokhaEntryModel.countDocuments(q),
       KhokhaEntryModel.find(q)
         .sort({ [dateField]: -1 })
@@ -595,6 +612,13 @@ khokhaEntryRouter.post("/entries/export/preview", async (req, res) => {
           isClosed: 1, createdAt: 1,
         }),
     ]);
+
+    const results = docs.map(d => ({
+      ...d,
+      checkOutTime: toISTISOString(d.checkOutTime),
+      checkInTime: toISTISOString(d.checkInTime),
+      createdAt: toISTISOString(d.createdAt)
+    }));
 
     res.json({ total, page, limit, results });
   } catch (err) {
