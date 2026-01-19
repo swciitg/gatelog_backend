@@ -403,19 +403,15 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
       if (filters.status === 'Open')   base.isClosed = false;
       if (filters.status === 'Closed') base.isClosed = true;
 
-      // Date ranges (apply -5h30m for BOTH checkOutTime & checkInTime)
-      const OFFSET = 330 * 60 * 1000;
-      const needsOffset = (field) => field === 'checkOutTime' || field === 'checkInTime';
+      // Date ranges use submitted timestamps as-is
       const addRange = (field, from, to) => {
         if (!from && !to) return;
         const r = {};
         if (from) {
-          const d = new Date(from);
-          r.$gte = needsOffset(field) ? new Date(d.getTime() - OFFSET) : d;
+          r.$gte = new Date(from);
         }
         if (to) {
-          const d = new Date(to);
-          r.$lte = needsOffset(field) ? new Date(d.getTime() - OFFSET) : d;
+          r.$lte = new Date(to);
         }
         base[field] = r;
       };
@@ -488,13 +484,7 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
     const toDate = new Date(to);
     if (isNaN(fromDate) || isNaN(toDate)) return res.status(400).send('Invalid date format.');
 
-    // Apply -5h30m shift if the chosen dateField is checkOutTime or checkInTime
-    const OFFSET = 330 * 60 * 1000;
-    const shiftNeeded = (dateField === 'checkOutTime' || dateField === 'checkInTime');
-    const fromAdj = shiftNeeded ? new Date(fromDate.getTime() - OFFSET) : fromDate;
-    const toAdj   = shiftNeeded ? new Date(toDate.getTime() - OFFSET)   : toDate;
-
-    q[dateField] = { $gte: fromAdj, $lte: toAdj };
+    q[dateField] = { $gte: fromDate, $lte: toDate };
 
     if (name)        q.name = { $regex: name, $options: 'i' };
     if (rollNumber)  q.rollNumber = rollNumber;
