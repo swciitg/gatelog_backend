@@ -24,6 +24,29 @@ const toISTISOString = (value) => {
   return new Date(date.getTime() + IST_OFFSET_MS).toISOString();
 };
 
+// For Excel/CSV exports only - readable format
+const toReadableIST = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (isNaN(date)) return '';
+  
+  // Add IST offset: 5 hours 30 minutes = 330 minutes = 19800000 milliseconds
+  const istTime = date.getTime() + (330 * 60 * 1000);
+  const istDate = new Date(istTime);
+  
+  const day = istDate.getUTCDate();
+  const month = istDate.getUTCMonth() + 1;
+  const year = istDate.getUTCFullYear();
+  const hours = istDate.getUTCHours();
+  const minutes = istDate.getUTCMinutes().toString().padStart(2, '0');
+  const seconds = istDate.getUTCSeconds().toString().padStart(2, '0');
+  
+  const period = hours >= 12 ? 'PM' : 'AM';
+  const hours12 = hours % 12 || 12;
+  
+  return `${day}-${month}-${year} ${hours12}:${minutes}:${seconds} ${period}`;
+};
+
 function hmacHex(rollNo) {
   return crypto.createHmac("sha256", GATELOG_SECRET_KEY)
     .update(String(rollNo), "utf8")
@@ -455,12 +478,12 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
         RoomNumber: d.roomNumber,
         Destination: d.destination,
         CheckOutGate: d.checkOutGate,
-        CheckOutTime: toISTISOString(d.checkOutTime),
+        CheckOutTime: toReadableIST(d.createdAt),
         CheckInGate: d.checkInGate || '',
-        CheckInTime: toISTISOString(d.checkInTime),
+        CheckInTime: toReadableIST(d.checkInTime),
         Status: d.isClosed ? 'Closed' : 'Open',
-        CreatedAt: toISTISOString(d.createdAt),
-        UpdatedAt: toISTISOString(d.updatedAt),
+        CreatedAt: toReadableIST(d.createdAt),
+        UpdatedAt: toReadableIST(d.updatedAt),
         _id: d._id?.toString() || ''
       }));
 
@@ -524,12 +547,12 @@ khokhaEntryRouter.post("/entries/export", async (req, res) => {
       RoomNumber: d.roomNumber,
       Destination: d.destination,
       CheckOutGate: d.checkOutGate,
-      CheckOutTime: toISTISOString(d.checkOutTime),
+      CheckOutTime: toReadableIST(d.createdAt),
       CheckInGate: d.checkInGate || '',
-      CheckInTime: toISTISOString(d.checkInTime),
+      CheckInTime: toReadableIST(d.checkInTime),
       Status: d.isClosed ? 'Closed' : 'Open',
-      CreatedAt: toISTISOString(d.createdAt),
-      UpdatedAt: toISTISOString(d.updatedAt),
+      CreatedAt: toReadableIST(d.createdAt),
+      UpdatedAt: toReadableIST(d.updatedAt),
       _id: d._id?.toString() || ''
     }));
 
