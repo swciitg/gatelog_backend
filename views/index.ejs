@@ -281,6 +281,15 @@
     let table;
     let currentDetailsRow = null;
 
+    // Helper function to apply -5:30 offset to time
+    function formatTimeWithOffset(isoString) {
+      if (!isoString) return '—';
+      const date = new Date(isoString);
+      // Subtract 5 hours and 30 minutes (5.5 hours = 330 minutes)
+      date.setMinutes(date.getMinutes() - 330);
+      return date.toLocaleString();
+    }
+
     // ===== Loader helpers =====
     const loaderEl = () => document.getElementById('appLoader');
     const loaderTextEl = () => document.getElementById('loaderText');
@@ -325,8 +334,8 @@
         <p class="mb-1">Hostel: ${row.hostel || '—'} • Room: ${row.roomNumber || '—'}</p>
         <p class="mb-1">Destination: ${row.destination || '—'}</p>
         <p class="mb-1">Gate: Out ${row.checkOutGate || '—'} • In ${row.checkInGate || '—'}</p>
-        <p class="mb-0">Check-Out: ${row.checkOutTime ? new Date(row.checkOutTime).toLocaleString() : '—'}
-          • Check-In: ${row.checkInTime ? new Date(row.checkInTime).toLocaleString() : '—'}</p>
+        <p class="mb-0">Check-Out: ${formatTimeWithOffset(row.checkOutTime)}
+          • Check-In: ${formatTimeWithOffset(row.checkInTime)}</p>
       `;
     }
 
@@ -487,8 +496,8 @@
           { data: null, orderable: false, searchable: false, render: (row) =>
               `<div><strong>Out:</strong> ${row.checkOutGate || ''}</div>
                <div><strong>In:</strong> ${row.checkInGate || '—'}</div>` },
-          { data: 'checkOutTime', render: (iso) => iso ? new Date(iso).toLocaleString() : '—' },
-          { data: 'checkInTime',  render: (iso) => iso ? new Date(iso).toLocaleString()  : '—' },
+          { data: 'checkOutTime', render: (iso) => formatTimeWithOffset(iso) },
+          { data: 'checkInTime',  render: (iso) => formatTimeWithOffset(iso) },
           { data: null, orderable: false, searchable: false, render: () => '<span class="text-muted">—</span>' }
         ]
       });
@@ -526,8 +535,8 @@
           <p><strong>Destination:</strong> ${row.destination}</p>
           <p><strong>Status:</strong> ${row.isClosed ? 'Closed' : 'Open'}</p>
           <p><strong>Gate:</strong> Out: ${row.checkOutGate || ''} • In: ${row.checkInGate || '—'}</p>
-          <p><strong>Check-Out:</strong> ${row.checkOutTime ? new Date(row.checkOutTime).toLocaleString() : '—'}</p>
-          <p><strong>Check-In:</strong> ${row.checkInTime ? new Date(row.checkInTime).toLocaleString() : '—'}</p>
+          <p><strong>Check-Out:</strong> ${formatTimeWithOffset(row.checkOutTime)}</p>
+          <p><strong>Check-In:</strong> ${formatTimeWithOffset(row.checkInTime)}</p>
         `;
         $('#modalContent').html(detailsHtml);
 
