@@ -30,7 +30,7 @@ export const login = (req, res) => {
 
 
 export const getHomePage = async(req, res) => {
-   const entries = await khokhaEntryModel.find().sort('-createdAt');
+   const entries = await khokhaEntryModel.find().sort('-createdAt').limit(50).lean();
     if (!req.session.user) {
         return res.redirect(process.env.BASE_URL +'/new/admin/login');
     }
