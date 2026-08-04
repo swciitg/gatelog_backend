@@ -19,6 +19,8 @@ import {
 import {adminRouter, adminJs} from "./admin_panel/adminConfig.js";
 import dotenv from 'dotenv';
 import bodyParser from 'body-parser';
+import client from 'prom-client';
+import { metricsMiddleware } from './middlewares/metricsMiddleware.js';
 dotenv.config();
 
 const app = express();
@@ -69,6 +71,11 @@ app.get((process.env.BASE_URL ) + '/health', (req, res) => {
   });
 });
 
+app.use(metricsMiddleware);
+app.get((process.env.BASE_URL ) + "/metrics", async (req, res) => {
+    res.set("Content-Type", client.register.contentType);
+    res.end(await client.register.metrics());
+})
 
 app.use(process.env.BASE_URL, khokhaEntryRouter);
 app.locals.BASE_URL = process.env.BASE_URL;
